@@ -1,6 +1,7 @@
 #![warn(missing_docs)]
 #![forbid(unsafe_code)] 
 #![allow(clippy::needless_doctest_main)]
+
 //! This crate expose macros and traits to generate boilerplate code
 //! for structs inspection and edition.
 //!
@@ -123,6 +124,8 @@ use chrono::NaiveDate;
 
 /// See also [EguiInspect]
 pub use egui_field_editor_derive::*;
+/// A function to format label
+pub type LabelFormater = Box<dyn Fn(&str) -> String>;
 
 /// A wrapper widget that renders an object implementing [`EguiInspect`] inside an `egui` UI.
 ///
@@ -161,7 +164,7 @@ pub struct EguiInspector<'a, T : EguiInspect> {
 	read_only: bool,
 	id_salt: Option<egui::Id>,
 	label_ratio: f32,
-	label_formatter: Option<Box<dyn Fn(&str) -> String>>,
+	label_formatter: Option<LabelFormater>,
 }
 impl<'a, T : EguiInspect> EguiInspector<'a, T> {
 	/// Creates a new inspector widget for the given object.
@@ -451,6 +454,7 @@ where
 ///
 /// - [`egui::Slider`]
 /// - [`add_number`]
+#[allow(clippy::too_many_arguments)]
 pub fn add_number_slider<Num: egui::emath::Numeric>(data: &mut Num, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, min:Num, max: Num, ui: &mut egui::Ui) {
 	let editor=egui::Slider::new(data, min..=max);
 	crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, field_width| {
