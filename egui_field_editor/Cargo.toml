@@ -1,6 +1,6 @@
 [package]
 name = "egui_field_editor"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2024"
 description = "Easily creating UI to edit and preview data"
 readme = "../README.md"
@@ -14,7 +14,7 @@ categories = ["gui", "development-tools", "game-development"]
 all-features = true
 
 [dependencies]
-egui = ">=0.32.0"
+egui = ">=0.31.0"
 egui_dnd = ">=0.13.0"
 egui_field_editor_derive = { path = "../egui_field_editor_derive" }
 nalgebra-glm = { version = ">=0.20", features = [], optional=true }
@@ -23,8 +23,8 @@ chrono = { version = ">=0.4", features = [], optional=true }
 rfd = { version = ">=0.13", features = [], optional=true }
 
 [dev-dependencies]
-eframe = ">=0.32.0"
-egui_extras = { version = ">=0.32", features = ["syntect"] }
+eframe = ">=0.31"
+egui_extras = { version = ">=0.31", features = ["syntect"] }
 better_default = "1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

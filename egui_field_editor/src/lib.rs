@@ -159,20 +159,22 @@ pub struct EguiInspector<'a, T : EguiInspect> {
 	obj: &'a mut T,
 	title: Option<String>,
 	read_only: bool,
-	id_salt: Option<egui::Id>
+	id_salt: Option<egui::Id>,
+	label_ratio: f32,
+	label_formatter: Option<Box<dyn Fn(&str) -> String>>,
 }
 impl<'a, T : EguiInspect> EguiInspector<'a, T> {
 	/// Creates a new inspector widget for the given object.
 	///
 	/// - `obj`: The object to inspect.
 	pub fn new(obj: &'a mut T) -> Self {
-		Self { obj, title: None, read_only: false, id_salt: None }
+		Self { obj, title: None, read_only: false, id_salt: None, label_ratio: 0.2, label_formatter: None }
 	}
 	/// Creates a new read only inspector widget for the given object.
 	///
 	/// - `obj`: The object to inspect.
 	pub fn new_read_only(obj: &'a mut T) -> Self {
-		Self { obj, title: None, read_only: true, id_salt: None }
+		Self { obj, title: None, read_only: true, id_salt: None, label_ratio: 0.2, label_formatter: None }
 	}
 	/// Set read-only mode.
 	#[inline]
@@ -192,6 +194,17 @@ impl<'a, T : EguiInspect> EguiInspector<'a, T> {
 		self.title = Some(title.to_owned());
 		self
 	}
+	/// Set label ratio.
+	#[inline]
+	pub fn label_ratio(mut self, size: f32) -> Self {
+		self.label_ratio = size;
+		self
+	}
+	/// - Set a function to format the label
+	pub fn label_formatter(mut self, label_formatter: Box<dyn Fn(&str) -> String>) -> Self {
+		self.label_formatter = Some(label_formatter);
+		self
+	}
 }
 
 impl<'a, T : EguiInspect> Widget for EguiInspector<'a, T> {
@@ -204,9 +217,9 @@ impl<'a, T : EguiInspect> Widget for EguiInspector<'a, T> {
 		egui::ScrollArea::vertical().show(ui, |ui| {
 			ui.set_min_width(available_width);
 			if let Some(salt) = self.id_salt {
-				self.obj.inspect_with_custom_id(salt, "", "", self.read_only, ui);
+				self.obj.inspect_with_custom_id(salt, "", "", self.label_ratio, self.read_only, ui);
 			} else {
-				self.obj.inspect("", "", self.read_only, ui);
+				self.obj.inspect("", "", self.label_ratio, self.read_only, ui);
 			}
 		});
 
@@ -230,8 +243,8 @@ macro_rules! impl_only_numbers_struct_inspect {
 		#[doc = " "]
 		#[doc = "# See Also"]
 		#[doc = "- [`egui::DragValue`]"]
-		pub fn $method(data: &mut $Type, label: &str, tooltip: &str, read_only: bool, ui: &mut egui::Ui) {
-			crate::add_custom_ui(label, tooltip, read_only, ui, |ui, _field_size| {
+		pub fn $method(data: &mut $Type, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+			crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, _field_size| {
 				ui.horizontal(|ui| {
 					$(
 						ui.label(stringify!($field));
@@ -257,8 +270,8 @@ macro_rules! impl_mat_inspect {
 		#[doc = " "]
 		#[doc = "# See Also"]
 		#[doc = "- [`egui::DragValue`]"]
-		pub fn $method(data: &mut $Type, label: &str, tooltip: &str, read_only: bool, ui: &mut egui::Ui) {
-				crate::add_custom_ui(label, tooltip, read_only, ui, |ui, _field_size| {
+		pub fn $method(data: &mut $Type, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+				crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, _field_size| {
 					ui.vertical(|ui| {
 						ui.group(|ui| {
 							$(
@@ -329,13 +342,13 @@ pub trait EguiInspect {
 	/// - `tooltip`: Tooltip shown when hovering over the label.
 	/// - `read_only`: If `true`, disables all interactive widgets.
 	/// - `ui`: The `egui::Ui` to render into.
-	fn inspect(&mut self, label: &str, tooltip: &str, read_only: bool, ui: &mut egui::Ui) {
-		self.inspect_with_custom_id(egui::Id::NULL, label, tooltip, read_only, ui);
+	fn inspect(&mut self, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+		self.inspect_with_custom_id(egui::Id::NULL, label, tooltip, label_ratio, read_only, ui);
 	}
 	/// Renders the inspector UI with a custom parent ID.
 	///
 	/// This allows you to scope widget IDs under a specific parent, useful for avoiding collisions.
-	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, read_only: bool, ui: &mut egui::Ui);
+	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui);
 
 }
 
@@ -354,8 +367,8 @@ pub trait EguiInspect {
 ///
 /// - [`egui::Widget`]
 /// - [add_custom_ui]
-pub fn add_widget<T: egui::Widget>(label: &str, widget: T, tooltip: &str, read_only: bool, ui: &mut egui::Ui){
-	crate::add_custom_ui(label, tooltip, read_only, ui, |ui, field_width| {
+pub fn add_widget<T: egui::Widget>(label: &str, widget: T, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui){
+	crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, field_width| {
 			ui.spacing_mut().slider_width = field_width-50.; 
 			ui.add_sized([field_width, 0.], widget);
 	});
@@ -367,12 +380,14 @@ pub fn add_widget<T: egui::Widget>(label: &str, widget: T, tooltip: &str, read_o
 /// 
 /// - `label`: Label shown to the left of the field.
 /// - `tooltip`: Tooltip shown when hovering over the label.
+/// - `label_ratio`: The width percent for the label
 /// - `read_only`: If `true`, disables the field.
 /// - `ui`: The `egui::Ui` to render into.
 /// - `field_renderer`: A closure that renders the field, receiving the available field width.
 pub fn add_custom_ui<F>(
 	label: &str,
 	tooltip: &str,
+	label_ratio: f32,
 	read_only: bool,
 	ui: &mut egui::Ui,
 	field_renderer: F,
@@ -380,11 +395,13 @@ pub fn add_custom_ui<F>(
 where
 	F: FnOnce(&mut egui::Ui, f32),
 {
-	let available_width = ui.available_width();
-	let label_width = available_width * 0.2;
-	let field_width = 100.0f32.max(available_width * 0.8 - 10.0);
+	let label_ratio = label_ratio.clamp(0.1, 0.9);
 
-	ui.horizontal(|ui| {
+	let available_width = ui.available_width();
+	let label_width = available_width * label_ratio;
+	let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
+
+	ui.horizontal_top(|ui| {
 		ui.add_enabled_ui(!read_only, |ui| {
 			let r = ui.add_sized(
 				[label_width, 0.0],
@@ -434,9 +451,9 @@ where
 ///
 /// - [`egui::Slider`]
 /// - [`add_number`]
-pub fn add_number_slider<Num: egui::emath::Numeric>(data: &mut Num, label: &str, tooltip: &str, read_only: bool, min:Num, max: Num, ui: &mut egui::Ui) {
+pub fn add_number_slider<Num: egui::emath::Numeric>(data: &mut Num, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, min:Num, max: Num, ui: &mut egui::Ui) {
 	let editor=egui::Slider::new(data, min..=max);
-	crate::add_custom_ui(label, tooltip, read_only, ui, |ui, field_width| {
+	crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, field_width| {
 		ui.spacing_mut().slider_width = field_width-50.; 
 		ui.add_sized([field_width, 0.], editor);
 	});
@@ -456,12 +473,12 @@ pub fn add_number_slider<Num: egui::emath::Numeric>(data: &mut Num, label: &str,
 ///
 /// - [`egui::DragValue`]
 /// - [`add_number`]
-pub fn add_number<Num: egui::emath::Numeric>(data: &mut Num, label: &str, tooltip: &str, read_only: bool, minmax: Option<(Num, Num)>, ui: &mut egui::Ui) {
+pub fn add_number<Num: egui::emath::Numeric>(data: &mut Num, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, minmax: Option<(Num, Num)>, ui: &mut egui::Ui) {
 	let mut editor=egui::DragValue::new(data);
 	if let Some(minmax) = minmax {
 		editor = editor.range(minmax.0..=minmax.1);
 	}
-	crate::add_widget(label, editor, tooltip, read_only, ui);
+	crate::add_widget(label, editor, tooltip, label_ratio, read_only, ui);
 }
 
 /// Adds a single-line text field.
@@ -469,8 +486,8 @@ pub fn add_number<Num: egui::emath::Numeric>(data: &mut Num, label: &str, toolti
 /// # See Also
 ///
 /// - [`egui::TextEdit::singleline`]
-pub fn add_string_singleline(data: &mut dyn egui::TextBuffer, label: &str, tooltip: &str, read_only: bool, ui: &mut egui::Ui) {
-	crate::add_widget(label, egui::TextEdit::singleline(data), tooltip, read_only, ui)
+pub fn add_string_singleline(data: &mut dyn egui::TextBuffer, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+	crate::add_widget(label, egui::TextEdit::singleline(data), tooltip, label_ratio, read_only, ui)
 }
 
 /// Adds a multi-line text field with a specified number of visible lines.
@@ -478,8 +495,8 @@ pub fn add_string_singleline(data: &mut dyn egui::TextBuffer, label: &str, toolt
 /// # See Also
 ///
 /// - [`egui::TextEdit::multiline`]
-pub fn add_string_multiline(data: &mut dyn egui::TextBuffer, label: &str, tooltip: &str, read_only: bool, nb_lines: u8, ui: &mut egui::Ui) {
-	crate::add_widget(label, egui::TextEdit::multiline(data).desired_rows(nb_lines as usize), tooltip, read_only, ui)
+pub fn add_string_multiline(data: &mut dyn egui::TextBuffer, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, nb_lines: u8, ui: &mut egui::Ui) {
+	crate::add_widget(label, egui::TextEdit::multiline(data).desired_rows(nb_lines as usize), tooltip, label_ratio, read_only, ui)
 }
 
 /// Adds a boolean checkbox.
@@ -487,8 +504,8 @@ pub fn add_string_multiline(data: &mut dyn egui::TextBuffer, label: &str, toolti
 /// # See Also
 ///
 /// - [`egui::Checkbox`]
-pub fn add_bool(data: &mut bool, label: &str, tooltip: &str, read_only: bool, ui: &mut egui::Ui) {
-	crate::add_widget(label, egui::Checkbox::new(data, ""), tooltip, read_only, ui);
+pub fn add_bool(data: &mut bool, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+	crate::add_widget(label, egui::Checkbox::new(data, ""), tooltip, label_ratio, read_only, ui);
 }
 
 /// Adds a color picker for [`egui::Color32`].
@@ -496,10 +513,12 @@ pub fn add_bool(data: &mut bool, label: &str, tooltip: &str, read_only: bool, ui
 /// # See Also
 ///
 /// - [`egui::Ui::color_edit_button_srgba`]
-pub fn add_color32(data: &mut egui::Color32, label: &str, tooltip: &str, read_only: bool, ui: &mut egui::Ui) {
+pub fn add_color32(data: &mut egui::Color32, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+	let label_ratio = label_ratio.clamp(0.1, 0.9);
+
 	let available_width = ui.available_width();
-	let label_width = available_width * 0.2;
-	//let field_width = 100.0f32.max(available_width * 0.8 - 10.0);
+	let label_width = available_width * label_ratio;
+	//let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
 	ui.horizontal(|ui| {
 		ui.add_enabled_ui(!read_only, |ui| {
 			let r=ui.add_sized([label_width,0.],egui::Label::new(label).truncate().show_tooltip_when_elided(true).halign(egui::Align::LEFT));
@@ -520,13 +539,13 @@ pub fn add_color32(data: &mut egui::Color32, label: &str, tooltip: &str, read_on
 /// # See Also
 ///
 /// - [`egui::Ui::color_edit_button_srgba`]
-pub fn add_color<T>(data: &mut T, label: &str, tooltip: &str, read_only: bool, ui: &mut egui::Ui)
+pub fn add_color<T>(data: &mut T, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui)
 where
 	Color32Wrapper: From<T>,
 	T : From<Color32Wrapper>,
 	T : Clone {
 	
-	crate::add_custom_ui(label, tooltip, read_only, ui, |ui, _field_width| {
+	crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, _field_width| {
 		let mut color: Color32Wrapper = data.clone().into();
 		if ui.color_edit_button_srgba(&mut color).changed() {
 			*data = color.into();
@@ -542,9 +561,9 @@ where
 /// # See Also
 ///
 /// - [egui::ComboBox]
-pub fn add_combobox(current_index: &mut usize, label: &str, tooltip: &str, read_only: bool, choices: &[String],ui: &mut egui::Ui) {
+pub fn add_combobox(current_index: &mut usize, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, choices: &[String],ui: &mut egui::Ui) {
 	//TODO: good management of id_salt
-	crate::add_custom_ui(label, tooltip, read_only, ui, |ui, field_width| {
+	crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, field_width| {
 		egui::ComboBox::from_id_salt(label).width(field_width).show_index(ui, current_index, choices.len(), |i| {&choices[i]});
 	});
 }
@@ -565,11 +584,11 @@ where F: FnOnce(&mut egui::Ui) {
 	});
 }
 /// Add a single line text field which use string conversions to edit. 
-pub fn add_string_convertible<T>(value: &mut T, label: &str, tooltip: &str, read_only: bool, ui: &mut Ui)
+pub fn add_string_convertible<T>(value: &mut T, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui)
 where T: FromStr + Display {
 	let mut buffer = value.to_string();
 
-	buffer.inspect_with_custom_id(ui.next_auto_id().with(label), label, tooltip, read_only, ui);
+	buffer.inspect_with_custom_id(ui.next_auto_id().with(label), label, tooltip, label_ratio, read_only, ui);
 
 	if let Ok(parsed) = T::from_str(&buffer) {
 		*value = parsed;
@@ -578,11 +597,11 @@ where T: FromStr + Display {
 	}
 }
 /// Add a multiline line text field which use string conversions to edit. 
-pub fn add_string_convertible_multiline<T>(value: &mut T, label: &str, tooltip: &str, read_only: bool, ui: &mut Ui)
+pub fn add_string_convertible_multiline<T>(value: &mut T, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui)
 where T: FromStr + Display {
 	let mut buffer = value.to_string();
 
-	crate::add_string_multiline(&mut buffer, label, tooltip, read_only, 4, ui);
+	crate::add_string_multiline(&mut buffer, label, tooltip, label_ratio, read_only, 4, ui);
 
 	if let Ok(parsed) = T::from_str(&buffer) {
 		*value = parsed;
@@ -611,7 +630,7 @@ where T: FromStr + Display {
 /// - [`egui_extras::DatePickerButton`]
 #[cfg(feature = "datepicker")]
 #[allow(clippy::too_many_arguments)] // TODO: find a better way to pass arguments
-pub fn add_date(data: &mut NaiveDate, parent_id: egui::Id, label: &str, tooltip: &str, read_only: bool,
+pub fn add_date(data: &mut NaiveDate, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool,
 		combo_boxes: bool,
 		arrows: bool,
 		calendar: bool,
@@ -638,15 +657,15 @@ pub fn add_date(data: &mut NaiveDate, parent_id: egui::Id, label: &str, tooltip:
 		// Ugly hack because DatePickerButton::id_salt() taking a &str
 		let mut hasher = std::hash::DefaultHasher::new();
 		id.hash(&mut hasher);
-		crate::add_widget(label, widget.id_salt(format!("{}", hasher.finish()).as_str()), tooltip, read_only, ui);
+		crate::add_widget(label, widget.id_salt(format!("{}", hasher.finish()).as_str()), tooltip, label_ratio, read_only, ui);
 	} else {
-		crate::add_widget(label, widget, tooltip, read_only, ui);
+		crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui);
 	}
 }
 
 /// Add a path (a singleline string editor) with a button next to it to open a file picker if the feature "filepicker" is active
-pub fn add_path(data: &mut std::path::PathBuf, label: &str, tooltip: &str, read_only: bool, _filters: Vec<&str>, ui: &mut egui::Ui) {
-	add_custom_ui(label, tooltip, read_only, ui, |ui, field_width| {
+pub fn add_path(data: &mut std::path::PathBuf, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, _filters: Vec<&str>, ui: &mut egui::Ui) {
+	add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, field_width| {
 		if let Some(path) = data.to_str() {
 			let mut path = path.to_string();
 			#[cfg(all(feature="filepicker", not(target_arch = "wasm32")))]
