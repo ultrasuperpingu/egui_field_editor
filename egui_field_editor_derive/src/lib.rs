@@ -91,7 +91,8 @@ fn bool_true() -> bool {
 #[darling(attributes(inspect), default)]
 struct ObjectAttributeArgs {
 	#[darling(multiple)]
-	execute_btn: Vec<ExecuteBtn>
+	execute_btn: Vec<ExecuteBtn>,
+	label_formatter: Option<syn::Expr>
 }
 #[derive(Debug, FromField, FromVariant, Default)]
 #[darling(attributes(inspect), default)]
@@ -148,7 +149,7 @@ pub fn derive_egui_field_editor(input: proc_macro::TokenStream) -> proc_macro::T
 
 	let expanded = quote! {
 		impl #impl_generics egui_field_editor::EguiInspect for #name #ty_generics #where_clause {
-			fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, read_only: bool, ui: &mut egui::Ui) {
+			fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
 				let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
 				let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
 				#inspect_code
@@ -289,13 +290,15 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 
 	quote_spanned! {
 		enum_name.span() => {
+				let label_ratio = label_ratio.clamp(0.1, 0.9);
+
 				let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
 				//TODO: find a way to use it (if only Unit variants) or don't declare it if not needed
 				#[allow(unused_variables)]
 				let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
 				let available_width = ui.available_width();
-				let label_width = available_width * 0.2;
-				let field_width = 100.0f32.max(available_width * 0.8 - 10.0);
+				let label_width = available_width * label_ratio;
+				let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
 
 				ui.horizontal(|ui| {
 					let r = ui.add_sized(

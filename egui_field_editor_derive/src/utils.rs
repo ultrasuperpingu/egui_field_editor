@@ -66,7 +66,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 				return quote_spanned! {
 					field.span() => {
 						ui.scope(|ui| {
-							#custom_fn_ident(#field_access, &#name_str, #tooltip, read_only || #read_only, ui);
+							#custom_fn_ident(#field_access, &#name_str, #tooltip, label_ratio, read_only || #read_only, ui);
 						});
 					}
 				};
@@ -87,7 +87,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 		return quote_spanned! {
 			field.span() => {
 				ui.scope(|ui| {
-					egui_field_editor::add_number_slider(#field_access, &#name_str, #tooltip, read_only || #read_only, #min as #ty, #max as #ty, ui);
+					egui_field_editor::add_number_slider(#field_access, &#name_str, #tooltip, label_ratio, read_only || #read_only, #min as #ty, #max as #ty, ui);
 				});
 			}
 		};
@@ -97,7 +97,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 		let ty = proc_macro2::Ident::new(&get_path_str(&field.ty), proc_macro2::Span::call_site()); 
 		return quote_spanned! {field.span() => {
 				ui.scope(|ui| {
-					egui_field_editor::add_number(#field_access, &#name_str, #tooltip, read_only || #read_only, Some((#min as #ty, #max as #ty)), ui);
+					egui_field_editor::add_number(#field_access, &#name_str, #tooltip, label_ratio, read_only || #read_only, Some((#min as #ty, #max as #ty)), ui);
 				});
 			}
 		};
@@ -107,7 +107,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 			return quote_spanned! {
 				field.span() => {
 					ui.scope(|ui| {
-						egui_field_editor::add_string_convertible_multiline(#field_access, &#name_str, #tooltip, read_only || #read_only, #nb_lines, ui);
+						egui_field_editor::add_string_convertible_multiline(#field_access, &#name_str, #tooltip, label_ratio, read_only || #read_only, #nb_lines, ui);
 					});
 				}
 			};
@@ -115,7 +115,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 			return quote_spanned! {
 				field.span() => {
 					ui.scope(|ui| {
-						egui_field_editor::add_string_convertible(#field_access, &#name_str, #tooltip, read_only || #read_only, ui);
+						egui_field_editor::add_string_convertible(#field_access, &#name_str, #tooltip, label_ratio, read_only || #read_only, ui);
 					});
 				}
 			};
@@ -125,14 +125,14 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 		return quote_spanned! {
 			field.span() => {
 				ui.scope(|ui| {
-					egui_field_editor::add_string_multiline(#field_access, &#name_str, #tooltip, read_only || #read_only, #nb_lines, ui);
+					egui_field_editor::add_string_multiline(#field_access, &#name_str, #tooltip, label_ratio, read_only || #read_only, #nb_lines, ui);
 				});
 			}
 		};
 	} else if attrs.color {
 		return quote_spanned! {field.span() => {
 				ui.scope(|ui| {
-					egui_field_editor::add_color(#field_access, &#name_str, #tooltip, read_only || #read_only, ui);
+					egui_field_editor::add_color(#field_access, &#name_str, #tooltip, label_ratio, read_only || #read_only, ui);
 				});
 			}
 		};
@@ -143,7 +143,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 		}).collect();
 		return quote_spanned! {field.span() => {
 				ui.scope(|ui| {
-					egui_field_editor::add_path(#field_access, &#name_str, #tooltip, read_only || #read_only, vec![#(#filters),*], ui);
+					egui_field_editor::add_path(#field_access, &#name_str, #tooltip, label_ratio, read_only || #read_only, vec![#(#filters),*], ui);
 				});
 			}
 		};
@@ -163,7 +163,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 		}
 		return quote_spanned! {field.span() => {
 				ui.scope(|ui| {
-					egui_field_editor::add_date(#field_access, id, &#name_str, #tooltip, read_only || #read_only,
+					egui_field_editor::add_date(#field_access, id, &#name_str, #tooltip, label_ratio, read_only || #read_only,
 						#combo_boxes,
 						#arrows,
 						#calendar,
@@ -183,7 +183,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 			let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
 			let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
 			ui.scope(|ui| {
-				egui_field_editor::EguiInspect::inspect_with_custom_id(#field_access, parent_id, &#name_str, #tooltip, read_only || #read_only, ui);
+				egui_field_editor::EguiInspect::inspect_with_custom_id(#field_access, parent_id, &#name_str, #tooltip, label_ratio, read_only || #read_only, ui);
 			});
 		}
 	}
