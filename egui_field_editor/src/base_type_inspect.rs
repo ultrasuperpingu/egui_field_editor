@@ -35,14 +35,14 @@ impl<T:EguiInspect> EguiInspect for Box<T> {
 		<T as EguiInspect>::inspect_with_custom_id(&mut *self, parent_id, label, tooltip, label_ratio, read_only, ui)
 	}
 }
-/*
-Waiting for Specialization du be stable
-impl<T: EguiInspect+Display> EguiInspect for Rc<RefCell<T>> {
-	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, read_only: bool, ui: &mut egui::Ui) {
+
+//Waiting for Specialization to be stable
+/*impl<T: EguiInspect+std::fmt::Display> EguiInspect for Rc<RefCell<T>> {
+	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
 		if let Ok(mut inner) = self.try_borrow_mut() {
-			inner.inspect_with_custom_id(parent_id, label, tooltip, read_only, ui);
+			inner.inspect_with_custom_id(parent_id, label, tooltip, label_ratio, read_only, ui);
 		} else if let Ok(inner) = self.try_borrow() {
-			crate::add_string_multiline(*(inner.to_string()).into(), label, tooltip, true, 10, ui);
+			crate::add_string_multiline(*(inner.to_string()).into(), label, tooltip, label_ratio, true, 10, ui);
 		} else {
 			ui.label("🔒 Already borrowed");
 		}
@@ -85,7 +85,7 @@ impl<T: EguiInspect> EguiInspect for Arc<RwLock<T>> {
 		parent_id: egui::Id,
 		label: &str,
 		tooltip: &str,
-		label_ratio: f32, 
+		label_ratio: f32,
 		read_only: bool,
 		ui: &mut Ui,
 	) -> egui::Response {
@@ -178,7 +178,7 @@ impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
 
 		let mut changed = false;
 
-		let header = egui::CollapsingHeader::new(format!("{label} [{N}]"))
+		let collapsing_resp = egui::CollapsingHeader::new(format!("{label} [{N}]"))
 			.id_salt(id.with("collapse"))
 			.show(ui, |ui| {
 				
@@ -217,8 +217,8 @@ impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
 				dnd_resp
 			});
 
-		let mut final_res = header.header_response;
-		if let Some(body_res) = header.body_response {
+		let mut final_res = ui.response();
+		if let Some(body_res) = collapsing_resp.body_response {
 			final_res = final_res.union(body_res);
 		}
 		if changed {
@@ -270,8 +270,6 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
 					changed = true;
 				}
 		});
-		let mut final_res = collapsing_resp.header_response;
-
 		ui.add_enabled_ui(!read_only, |ui| {
 			ui.horizontal_top(|ui| {
 				ui.add_space(ui.available_width() - 50.);
@@ -280,11 +278,16 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
 					changed = true;
 				}
 				if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20.,20.))).clicked() {
-					self.pop();
-					changed = true;
+					if self.pop().is_some() {
+						changed = true;
+					}
 				}
 			});
 		});
+		let mut final_res = ui.response();
+		if let Some(body_res) = collapsing_resp.body_response {
+			final_res = final_res.union(body_res);
+		}
 		if changed {
 			final_res.mark_changed();
 		}

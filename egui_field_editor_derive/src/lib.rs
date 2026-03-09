@@ -291,43 +291,49 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 
 	quote_spanned! {
 		enum_name.span() => {
-				let label_ratio = label_ratio.clamp(0.1, 0.9);
+			let label_ratio = label_ratio.clamp(0.1, 0.9);
 
-				let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
-				//TODO: find a way to use it (if only Unit variants) or don't declare it if not needed
-				#[allow(unused_variables)]
-				let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
-				let available_width = ui.available_width();
-				let label_width = available_width * label_ratio;
-				let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
+			let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
+			//TODO: find a way to use it (if only Unit variants) or don't declare it if not needed
+			#[allow(unused_variables)]
+			let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
+			let available_width = ui.available_width();
+			let label_width = available_width * label_ratio;
+			let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
 
-				ui.horizontal(|ui| {
-					let r = ui.add_sized(
-						[label_width, 0.0],
-						egui::Label::new(label)
-							.truncate()
-							.show_tooltip_when_elided(true)
-							.halign(egui::Align::LEFT),
-					);
+			let combo_resp = ui.horizontal(|ui| {
+				let r = ui.add_sized(
+					[label_width, 0.0],
+					egui::Label::new(label)
+						.truncate()
+						.show_tooltip_when_elided(true)
+						.halign(egui::Align::LEFT),
+				);
 
-					if !tooltip.is_empty() {
-						r.on_hover_text(tooltip).on_disabled_hover_text(tooltip);
-					}
-					ui.add_enabled_ui(!read_only, |ui| {
-						egui::ComboBox::from_id_salt(id)
+				if !tooltip.is_empty() {
+					r.on_hover_text(tooltip).on_disabled_hover_text(tooltip);
+				}
+				let mut changed = false;
+				ui.add_enabled_ui(!read_only, |ui| {
+					let mut resp = egui::ComboBox::from_id_salt(id)
 						.width(field_width)
 						.selected_text(match self {
 							#(#variant_texts)*
 						})
 						.show_ui(ui, |ui| {
 							#(#variant_select_conditions)*
-						});
-					});
-				});
+						}).response;
+					if changed {
+						resp.mark_changed();
+					}
+					resp
+				}).inner
+			}).inner;
 
-			match self {
+			let content_resp = match self {
 				#(#variant_content_edit)*
-			}
+			};
+			content_resp.union(combo_resp)
 		}
 	}
 }
@@ -368,12 +374,12 @@ fn get_code_for_struct_named_fields(fields: &FieldsNamed) -> TokenStream {
 				res.unwrap_or_else(|| ui.label("Empty Struct"))
 			};
 			if !label.is_empty() {
-				let header = egui::CollapsingHeader::new(label).id_salt(id).show(ui, add_content);
-				let mut final_res = header.header_response;
-				if let Some(body_res) = header.body_response {
-					final_res = final_res.union(body_res);
+				let collapsing_resp = egui::CollapsingHeader::new(label).id_salt(id).show(ui, add_content);
+				let mut final_resp = ui.response();
+				if let Some(body_res) = collapsing_resp.body_response {
+					final_resp = final_resp.union(body_res);
 				}
-				final_res
+				final_resp
 			} else {
 				add_content(ui)
 			}
@@ -418,12 +424,12 @@ fn get_code_for_struct_unnamed_fields(fields: &FieldsUnnamed) -> TokenStream {
 				res.unwrap_or_else(|| ui.label("Empty UnamedStruct"))
 			};
 			if !label.is_empty() {
-				let header = egui::CollapsingHeader::new(label).id_salt(id).show(ui, add_content);
-				let mut final_res = header.header_response;
-				if let Some(body_res) = header.body_response {
-					final_res = final_res.union(body_res);
+				let collapsing_resp = egui::CollapsingHeader::new(label).id_salt(id).show(ui, add_content);
+				let mut final_resp = ui.response();
+				if let Some(body_res) = collapsing_resp.body_response {
+					final_resp = final_resp.union(body_res);
 				}
-				final_res
+				final_resp
 			} else {
 				add_content(ui)
 			}
@@ -446,6 +452,7 @@ fn get_code_blocks_for_unit_variant(
 	variant_select_conditions.push(quote! {
 		if ui.selectable_value(self, #enum_name::#variant_name, #label).changed() {
 			*self = #enum_name::#variant_name;
+			changed=true;
 		}
 	});
 
@@ -484,6 +491,7 @@ fn get_code_blocks_for_unamed_variant(
 	variant_select_conditions.push(quote! {
 		if ui.selectable_value(self, #enum_name::#variant_name(#default_value), #label).changed() {
 			*self = #enum_name::#variant_name(#default_value);
+			changed=true;
 		}
 	});
 	let mut fieldnames_list = vec![];
@@ -566,6 +574,7 @@ fn get_code_blocks_for_named_variant(
 	variant_select_conditions.push(quote! {
 		if ui.selectable_value(self, #enum_name::#variant_name{#default_value}, #label).changed() {
 			*self = #enum_name::#variant_name { #default_value };
+			changed=true;
 		}
 	});
 

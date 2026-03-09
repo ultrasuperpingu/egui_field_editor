@@ -20,7 +20,9 @@ impl eframe::App for MyApp {
 	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 		let code = include_str!("filepicker.rs");
 		egui::SidePanel::right("right_panel").show(ctx, |ui| {
-			ui.add(EguiInspector::new(self).with_title("Inpector"));
+			if ui.add(EguiInspector::new(self).with_title("Inpector")).changed() {
+				println!("Changed!!!")
+			}
 		});
 		egui::CentralPanel::default().show(ctx, |ui| {
 			egui::ScrollArea::vertical().id_salt("code_scrolling").show(ui, |ui| {

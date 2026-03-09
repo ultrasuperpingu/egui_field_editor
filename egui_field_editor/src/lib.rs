@@ -1,4 +1,6 @@
 #![warn(missing_docs)]
+//#![deny(rustdoc::broken_intra_doc_links)]
+#![warn(rustdoc::invalid_html_tags)]
 #![forbid(unsafe_code)] 
 #![allow(clippy::needless_doctest_main)]
 
@@ -231,8 +233,6 @@ impl<'a, T : EguiInspect> Widget for EguiInspector<'a, T> {
 #[cfg(feature = "nalgebra_glm")]
 macro_rules! impl_only_numbers_struct_inspect {
 	($method:ident, $Type:ident, [$($field:ident),+]) => {
-		//Useless: only expanded if feature is on
-		//#[cfg(feature = "nalgebra_glm")]
 		#[doc = concat!("Adds an editor for [`", stringify!($Type), "`] using `egui::DragValue` for each field.")]
 		#[doc = " "]
 		#[doc = "# Parameters"]
@@ -352,7 +352,7 @@ macro_rules! impl_mat_inspect {
 ///         } else {
 ///             add_content(ui);
 ///         }
-///         //TODO: handle response correctly
+///         //TODO: handle response correctly (detect changes in add content and returns the corresponding response)
 ///         ui.response()
 ///     }
 /// }
@@ -384,6 +384,7 @@ pub trait EguiInspect {
 /// - `label`: Label shown to the left of the widget.
 /// - `widget`: The widget to render.
 /// - `tooltip`: Tooltip shown when hovering over the label.
+/// - `label_ratio`: The width percent for the label.
 /// - `read_only`: If `true`, disables the widget.
 /// - `ui`: The `egui::Ui` to render into.
 /// 
@@ -404,7 +405,7 @@ pub fn add_widget<T: egui::Widget>(label: &str, widget: T, tooltip: &str, label_
 /// 
 /// - `label`: Label shown to the left of the field.
 /// - `tooltip`: Tooltip shown when hovering over the label.
-/// - `label_ratio`: The width percent for the label
+/// - `label_ratio`: The width percent for the label.
 /// - `read_only`: If `true`, disables the field.
 /// - `ui`: The `egui::Ui` to render into.
 /// - `field_renderer`: A closure that renders the field, receiving the available field width.
@@ -469,6 +470,7 @@ where
 /// - `data`: A mutable reference to the numeric value to be modified by the slider.
 /// - `label`: The label displayed next to the slider.
 /// - `tooltip`: A short description shown as a tooltip when hovering over the label.
+/// - `label_ratio`: The width percent for the label.
 /// - `read_only`: If `true`, disables interaction with the slider.
 /// - `min`: The minimum value of the slider range.
 /// - `max`: The maximum value of the slider range.
@@ -491,6 +493,7 @@ pub fn add_number_slider<Num: egui::emath::Numeric>(data: &mut Num, label: &str,
 /// - `data`: Mutable reference to the numeric value.
 /// - `label`: Label shown next to the field.
 /// - `tooltip`: Tooltip shown when hovering.
+/// - `label_ratio`: The width percent for the label.
 /// - `read_only`: If `true`, disables interaction.
 /// - `minmax`: Optional `(min, max)` range.
 /// - `ui`: The `egui::Ui` to render into.
