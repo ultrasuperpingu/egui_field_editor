@@ -149,11 +149,12 @@ pub fn derive_egui_field_editor(input: proc_macro::TokenStream) -> proc_macro::T
 
 	let expanded = quote! {
 		impl #impl_generics egui_field_editor::EguiInspect for #name #ty_generics #where_clause {
-			fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+			fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
 				let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
 				let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
-				#inspect_code
+				let resp=#inspect_code;
 				#exec_code
+				resp
 			}
 		}
 	};
@@ -284,8 +285,8 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 	}
 	
 	if has_hidden {
-		variant_texts.push(quote!{_ => {""}});
-		variant_content_edit.push(quote! {_ => {} });
+		variant_texts.push(quote!{_ => { "" }});
+		variant_content_edit.push(quote! {_ => { ui.response() } });
 	}
 
 	quote_spanned! {
@@ -355,12 +356,26 @@ fn get_code_for_struct_named_fields(fields: &FieldsNamed) -> TokenStream {
 	quote_spanned! {
 		fields.span() => {
 			let mut add_content=|ui:&mut egui::Ui| {
+				let mut res: Option<egui::Response> = None;
+
+				macro_rules! combine {
+					($r:expr) => {
+						if let Some(ref mut total) = res { *total = total.union($r); }
+						else { res = Some($r); }
+					};
+				}
 				#(#recurse)*
+				res.unwrap_or_else(|| ui.label("Empty Struct"))
 			};
 			if !label.is_empty() {
-				egui::CollapsingHeader::new(label).id_salt(id).show(ui, add_content);
+				let header = egui::CollapsingHeader::new(label).id_salt(id).show(ui, add_content);
+				let mut final_res = header.header_response;
+				if let Some(body_res) = header.body_response {
+					final_res = final_res.union(body_res);
+				}
+				final_res
 			} else {
-				add_content(ui);
+				add_content(ui)
 			}
 		}
 	}
@@ -391,12 +406,26 @@ fn get_code_for_struct_unnamed_fields(fields: &FieldsUnnamed) -> TokenStream {
 	let result = quote_spanned! {
 		fields.span() => {
 			let mut add_content=|ui:&mut egui::Ui| {
+				let mut res: Option<egui::Response> = None;
+
+				macro_rules! combine {
+					($r:expr) => {
+						if let Some(ref mut total) = res { *total = total.union($r); }
+						else { res = Some($r); }
+					};
+				}
 				#(#recurse)*
+				res.unwrap_or_else(|| ui.label("Empty UnamedStruct"))
 			};
 			if !label.is_empty() {
-				egui::CollapsingHeader::new(label).id_salt(id).show(ui, add_content);
+				let header = egui::CollapsingHeader::new(label).id_salt(id).show(ui, add_content);
+				let mut final_res = header.header_response;
+				if let Some(body_res) = header.body_response {
+					final_res = final_res.union(body_res);
+				}
+				final_res
 			} else {
-				add_content(ui);
+				add_content(ui)
 			}
 		}
 	};
@@ -424,6 +453,7 @@ fn get_code_blocks_for_unit_variant(
 	variant_content_edit.push(quote! {
 		#enum_name::#variant_name => {
 			// nothing to edit
+			ui.response()
 		}
 	});
 }
@@ -488,8 +518,17 @@ fn get_code_blocks_for_unamed_variant(
 	variant_content_edit.push(quote! {
 		#enum_name::#variant_name(#(#bindings_for_match),* ) => {
 			ui.indent(id, |ui| {
+				let mut res: Option<egui::Response> = None;
+
+				macro_rules! combine {
+					($r:expr) => {
+						if let Some(ref mut total) = res { *total = total.union($r); }
+						else { res = Some($r); }
+					};
+				}
 				#(#recurse)*
-			});
+				res.unwrap_or_else(|| ui.label("Empty UnamedStruct"))
+			}).inner
 		}
 	});
 }
@@ -559,8 +598,17 @@ fn get_code_blocks_for_named_variant(
 	variant_content_edit.push(quote! {
 		#enum_name::#variant_name { #( #field_bindings ),* } => {
 			ui.indent(id, |ui| {
+				let mut res: Option<egui::Response> = None;
+
+				macro_rules! combine {
+					($r:expr) => {
+						if let Some(ref mut total) = res { *total = total.union($r); }
+						else { res = Some($r); }
+					};
+				}
 				#( #inspect_calls )*
-			});
+				res.unwrap_or_else(|| ui.label("Empty UnamedStruct"))
+			}).inner
 		}
 	});
 }

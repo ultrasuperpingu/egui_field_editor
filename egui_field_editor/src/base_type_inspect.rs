@@ -9,8 +9,8 @@ macro_rules! impl_inspect_number {
 	($($t:ty),+) => {
 		$(
 			impl crate::EguiInspect for $t {
-				fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
-					crate::add_number(self, label.into(), tooltip, label_ratio, read_only, None, ui);
+				fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+					crate::add_number(self, label.into(), tooltip, label_ratio, read_only, None, ui)
 				}
 			}
 		)*
@@ -25,14 +25,14 @@ impl_inspect_number!(i64, u64);
 impl_inspect_number!(isize, usize);
 
 impl<T:EguiInspect> EguiInspect for &mut T {
-	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
-		<T as EguiInspect>::inspect_with_custom_id(*self, parent_id, label, tooltip, label_ratio, read_only, ui);
+	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+		<T as EguiInspect>::inspect_with_custom_id(*self, parent_id, label, tooltip, label_ratio, read_only, ui)
 	}
 }
 
 impl<T:EguiInspect> EguiInspect for Box<T> {
-	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
-		<T as EguiInspect>::inspect_with_custom_id(&mut *self, parent_id, label, tooltip, label_ratio, read_only, ui);
+	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+		<T as EguiInspect>::inspect_with_custom_id(&mut *self, parent_id, label, tooltip, label_ratio, read_only, ui)
 	}
 }
 /*
@@ -49,11 +49,12 @@ impl<T: EguiInspect+Display> EguiInspect for Rc<RefCell<T>> {
 	}
 }*/
 impl<T: EguiInspect> EguiInspect for Rc<RefCell<T>> {
-	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
 		if let Ok(mut inner) = self.try_borrow_mut() {
-			inner.inspect_with_custom_id(parent_id, label, tooltip, label_ratio, read_only, ui);
+			inner.inspect_with_custom_id(parent_id, label, tooltip, label_ratio, read_only, ui)
 		} else {
 			ui.label("🔒 Already borrowed");
+			ui.response()
 		}
 	}
 }
@@ -66,13 +67,14 @@ impl<T: EguiInspect> EguiInspect for Arc<Mutex<T>> {
 		label_ratio: f32, 
 		read_only: bool,
 		ui: &mut Ui,
-	) {
+	) -> egui::Response {
 		match self.lock() {
 			Ok(mut inner) => {
-				inner.inspect_with_custom_id(parent_id, label, tooltip, label_ratio, read_only, ui);
+				inner.inspect_with_custom_id(parent_id, label, tooltip, label_ratio, read_only, ui)
 			}
 			Err(_) => {
 				ui.label("❌ Failed to acquire lock");
+				ui.response()
 			}
 		}
 	}
@@ -86,33 +88,34 @@ impl<T: EguiInspect> EguiInspect for Arc<RwLock<T>> {
 		label_ratio: f32, 
 		read_only: bool,
 		ui: &mut Ui,
-	) {
+	) -> egui::Response {
 		match self.write() {
 			Ok(mut inner) => {
-				inner.inspect_with_custom_id(parent_id, label, tooltip, label_ratio, read_only, ui);
+				inner.inspect_with_custom_id(parent_id, label, tooltip, label_ratio, read_only, ui)
 			}
 			Err(_) => {
 				ui.label("❌ Failed to acquire write lock");
+				ui.response()
 			}
 		}
 	}
 }
 
 impl crate::EguiInspect for &'static str {
-	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
-		crate::add_string_singleline(self, label, tooltip, label_ratio, read_only, ui);
+	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+		crate::add_string_singleline(self, label, tooltip, label_ratio, read_only, ui)
 	}
 }
 
 impl crate::EguiInspect for String {
-	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
-		crate::add_string_singleline(self, label, tooltip, label_ratio, read_only, ui);
+	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+		crate::add_string_singleline(self, label, tooltip, label_ratio, read_only, ui)
 	}
 }
 
 impl crate::EguiInspect for bool {
-	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
-		crate::add_bool(self, label, tooltip, label_ratio, read_only, ui);
+	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+		crate::add_bool(self, label, tooltip, label_ratio, read_only, ui)
 	}
 }
 struct CharString(String);
@@ -146,10 +149,13 @@ impl egui::TextBuffer for CharString {
 	}
 }
 impl crate::EguiInspect for char {
-	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
 		let mut string = CharString::new(*self);
-		crate::add_string_singleline( &mut string, label, tooltip, label_ratio, read_only, ui);
-		*self=string.char();
+		let resp=crate::add_string_singleline( &mut string, label, tooltip, label_ratio, read_only, ui);
+		if resp.changed() {
+			*self=string.char();
+		}
+		resp
 	}
 }
 
@@ -165,37 +171,61 @@ impl<T: crate::EguiInspect> egui_dnd::DragDropItem for EnumeratedItem<&mut T> {
 		egui::Id::new(self.salt_id.with(self.index))
 	}
 }
-
 impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
-	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui) {
+	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui) -> egui::Response {
 		let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
-		let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
-		egui::CollapsingHeader::new(label.to_string().add(format!("[{N}]").as_str())).id_salt(id.with("collapse")).show(ui, |ui| {
-			let response = egui_dnd::dnd(ui, id.with("dnd"))
-				.with_animation_time(0.0)
-				.show(
-					self
-						.iter_mut()
-						.enumerate()
-						.map(|(i, item)| EnumeratedItem { item, index: i, salt_id:id }),
-					|ui, item, handle, state| {
-						ui.horizontal(|ui| {
-							handle.ui(ui, |ui| {
-								if state.dragged {
-									ui.label("≡");
-								} else {
-									ui.label("☰");
+		let parent_id_for_children = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
+
+		let mut changed = false;
+
+		let header = egui::CollapsingHeader::new(format!("{label} [{N}]"))
+			.id_salt(id.with("collapse"))
+			.show(ui, |ui| {
+				
+				let dnd_resp = egui_dnd::dnd(ui, id.with("dnd"))
+					.with_animation_time(0.0)
+					.show(
+						self.iter_mut().enumerate().map(|(i, item)| EnumeratedItem { item, index: i, salt_id: id }),
+						|ui, item, handle, state| {
+							ui.horizontal(|ui| {
+								handle.ui(ui, |ui| {
+									ui.label(if state.dragged { "≡" } else { "☰" });
+								});
+								
+								let index = item.index;
+								let res = item.item.inspect_with_custom_id(
+									parent_id_for_children, 
+									&format!("Item {index}"), 
+									tooltip, 
+									label_ratio, 
+									read_only, 
+									ui
+								);
+								
+								if res.changed() {
+									changed = true;
 								}
 							});
-							let index = item.index;
-							item.item.inspect_with_custom_id(parent_id, format!("Item {index}").as_str(), tooltip, label_ratio, read_only, ui);
-						});
-					},
-				);
-				if response.is_drag_finished() {
-					response.update_vec(self);
+						},
+					);
+
+				if dnd_resp.is_drag_finished() {
+					dnd_resp.update_vec(self);
+					changed = true;
 				}
-		});
+
+				dnd_resp
+			});
+
+		let mut final_res = header.header_response;
+		if let Some(body_res) = header.body_response {
+			final_res = final_res.union(body_res);
+		}
+		if changed {
+			final_res.mark_changed();
+		}
+		
+		final_res
 	}
 }
 
@@ -208,11 +238,12 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
 		label_ratio: f32, 
 		read_only: bool,
 		ui: &mut Ui,
-	) {
+	) -> egui::Response {
 		let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
 		let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
-		egui::CollapsingHeader::new(label.to_string().add(format!("[{}]", self.len()).as_str())).id_salt(id.with("collapse")).show(ui, |ui| {
-			let response = egui_dnd::dnd(ui, id.with("dnd"))
+		let mut changed = false;
+		let collapsing_resp = egui::CollapsingHeader::new(label.to_string().add(format!("[{}]", self.len()).as_str())).id_salt(id.with("collapse")).show(ui, |ui| {
+			let dnd_resp = egui_dnd::dnd(ui, id.with("dnd"))
 				.with_animation_time(0.0)
 				.show(
 					self
@@ -229,45 +260,54 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
 								}
 							});
 							let index = item.index;
-							item.item.inspect_with_custom_id(parent_id, format!("Item {index}").as_str(), tooltip, label_ratio, read_only, ui);
+							let r = item.item.inspect_with_custom_id(parent_id, format!("Item {index}").as_str(), tooltip, label_ratio, read_only, ui);
+							if r.changed() { changed = true; }
 						});
 					},
 				);
-				if response.is_drag_finished() {
-					response.update_vec(self);
+				if dnd_resp.is_drag_finished() {
+					dnd_resp.update_vec(self);
+					changed = true;
 				}
 		});
+		let mut final_res = collapsing_resp.header_response;
 
 		ui.add_enabled_ui(!read_only, |ui| {
 			ui.horizontal_top(|ui| {
 				ui.add_space(ui.available_width() - 50.);
 				if ui.add(egui::Button::new("+").min_size(egui::Vec2::new(20.,20.))).clicked() {
 					self.push(T::default());
+					changed = true;
 				}
 				if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20.,20.))).clicked() {
 					self.pop();
+					changed = true;
 				}
 			});
 		});
+		if changed {
+			final_res.mark_changed();
+		}
+		final_res
 	}
 
 }
 
 impl crate::EguiInspect for Color32 {
-	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
-		crate::add_color(self, label, tooltip, label_ratio, read_only, ui);
+	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+		crate::add_color(self, label, tooltip, label_ratio, read_only, ui)
 	}
 }
 
 impl crate::EguiInspect for std::path::PathBuf {
-	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
-		crate::add_path(self, label, tooltip, label_ratio, read_only, vec![], ui);
+	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+		crate::add_path(self, label, tooltip, label_ratio, read_only, vec![], ui)
 	}
 }
 
 impl<T : EguiInspect> crate::EguiInspect for Option<T>
 	where T : Default+PartialEq {
-	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
 		let label_ratio = label_ratio.clamp(0.1, 0.9);
 		let id = if _parent_id == egui::Id::NULL {
 			ui.next_auto_id()
@@ -279,8 +319,8 @@ impl<T : EguiInspect> crate::EguiInspect for Option<T>
 		let label_width = available_width * label_ratio;
 		let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
 
-		ui.horizontal(|ui| {
-			let r = ui.add_sized(
+		let mut main_res =ui.horizontal(|ui| {
+			let mut label_res = ui.add_sized(
 				[label_width, 0.0],
 				egui::Label::new(label)
 					.truncate()
@@ -289,10 +329,10 @@ impl<T : EguiInspect> crate::EguiInspect for Option<T>
 			);
 
 			if !tooltip.is_empty() {
-				r.on_hover_text(tooltip).on_disabled_hover_text(tooltip);
+				label_res=label_res.on_hover_text(tooltip).on_disabled_hover_text(tooltip);
 			}
-			ui.add_enabled_ui(!read_only, |ui| {
-				egui::ComboBox::from_id_salt(id)
+			let combo_res = ui.add_enabled_ui(!read_only, |ui| {
+				egui::ComboBox::from_id_salt(id.with("cb"))
 					.selected_text(
 						match self {
 							None => "None",
@@ -303,8 +343,10 @@ impl<T : EguiInspect> crate::EguiInspect for Option<T>
 					.show_ui(
 						ui,
 						|ui| {
+							let mut changed = false;
 							if ui.selectable_value(self, None, "None").changed() {
 								*self = None;
+								changed=true;
 							}
 							if ui
 								.selectable_value(
@@ -315,15 +357,18 @@ impl<T : EguiInspect> crate::EguiInspect for Option<T>
 								.changed()
 							{
 								*self = Some(Default::default());
+								changed=true;
 							}
+							if changed { ui.response().mark_changed(); }
 						},
-					);
-			});
-		});
+					).response
+			}).inner;
+			label_res.union(combo_res)
+		}).inner;
 		match self {
 			None => {}
 			Some(field0) => {
-				ui.indent(id, |ui| {
+				let inner_res = ui.indent(id, |ui| {
 					field0.inspect_with_custom_id(
 						parent_id,
 						"",
@@ -331,10 +376,12 @@ impl<T : EguiInspect> crate::EguiInspect for Option<T>
 						label_ratio, 
 						read_only,
 						ui,
-					);
-				});
+					)
+				}).inner;
+				main_res = main_res.union(inner_res);
 			}
 		}
+		main_res
 	}
 }
 
@@ -350,17 +397,24 @@ mod nalgebra_ui {
 	macro_rules! impl_only_numbers_struct_inspect {
 		($Type:ident, [$($field:ident),+]) => {
 			impl EguiInspect for $Type {
-				fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+				fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
 					crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, _field_size| {
 						ui.group(|ui| {
 							ui.horizontal(|ui| {
-							$(
-								ui.label(stringify!($field));
-								ui.add(egui::DragValue::new(&mut self.$field).speed(0.1));
-							)+
-							});
-						});
-					});
+								let mut combined_res: Option<egui::Response> = None;
+								$(
+									ui.label(stringify!($field));
+									let res = ui.add(egui::DragValue::new(&mut self.$field).speed(0.1));
+									if let Some(ref mut total) = combined_res {
+										*total = total.union(res);
+									} else {
+										combined_res = Some(res);
+									}
+								)+
+								combined_res.expect("Macro expanded with no fields")
+							}).inner
+						}).inner
+					})
 				}
 			}
 		};
@@ -376,21 +430,35 @@ mod nalgebra_ui {
 					label_ratio: f32, 
 					read_only: bool,
 					ui: &mut egui::Ui,
-				) {
+				) -> egui::Response {
 					crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, _field_size| {
 						ui.vertical(|ui| {
 							ui.group(|ui| {
+								let mut mat_res: Option<egui::Response> = None;
 								$(
-									ui.horizontal(|ui| {
+									let row_res = ui.horizontal(|ui| {
+										let mut line_res: Option<egui::Response> = None;
 										$(
 											ui.label(stringify!($field));
-											ui.add(egui::DragValue::new(&mut self.$field).speed(0.1));
+											let res = ui.add(egui::DragValue::new(&mut self.$field).speed(0.1));
+											if let Some(ref mut total) = line_res {
+												*total = total.union(res);
+											} else {
+												line_res = Some(res);
+											}
 										)+
-									});
+										line_res.expect("Empty row in matrix macro")
+									}).inner;
+									if let Some(ref mut total) = mat_res {
+										*total = total.union(row_res);
+									} else {
+										mat_res = Some(row_res);
+									}
 								)+
-							});
-						});
-					});
+								mat_res.expect("Empty matrix in macro")
+							}).inner
+						}).inner
+					})
 				}
 			}
 		};
@@ -492,16 +560,16 @@ mod datepicker {
 	use chrono::prelude::*;
 	use egui_extras::DatePickerButton;
 	impl EguiInspect for NaiveDate {
-		fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) {
+		fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
 			let id = if parent_id == egui::Id::NULL { egui::Id::NULL } else { parent_id.with(label) };
 			let widget = DatePickerButton::new(self);
 			if id != egui::Id::NULL {
 				// Ugly hack because DatePickerButton::id_salt() needs a &str
 				let mut hasher = std::hash::DefaultHasher::new();
 				id.hash(&mut hasher);
-				crate::add_widget(label, widget.id_salt(format!("{}", hasher.finish()).as_str()), tooltip, label_ratio, read_only, ui);
+				crate::add_widget(label, widget.id_salt(format!("{}", hasher.finish()).as_str()), tooltip, label_ratio, read_only, ui)
 			} else {
-				crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui);
+				crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
 			}
 		}
 	}

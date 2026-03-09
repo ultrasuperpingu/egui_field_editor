@@ -23,6 +23,7 @@ struct MyApp {
 	#[inspect(read_only)]
 	thread_running: bool,
 }
+
 impl MyApp {
 	fn share_refcell(&mut self) {
 		self.refcell_capture = Some(self.refcell_string.clone());

@@ -1,6 +1,6 @@
 [package]
 name = "egui_field_editor"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 description = "Easily creating UI to edit and preview data"
 readme = "../README.md"
@@ -16,7 +16,7 @@ all-features = true
 [dependencies]
 egui = ">=0.31.0"
 egui_dnd = ">=0.13.0"
-egui_field_editor_derive = "0.3.0"
+egui_field_editor_derive = { path = "../egui_field_editor_derive" }
 nalgebra-glm = { version = ">=0.20", features = [], optional=true }
 egui_extras = { version = ">=0.32", features = ["syntect", "datepicker"], optional=true }
 chrono = { version = ">=0.4", features = [], optional=true }
