@@ -1,5 +1,6 @@
 
 use std::net::Ipv4Addr;
+use std::collections::HashMap;
 
 use egui::Color32;
 use egui_extras::syntax_highlighting::{code_view_ui, CodeTheme};
@@ -68,6 +69,7 @@ struct MyApp {
 	pub array: [TestData;4],
 	#[cfg(feature = "smallvec")]
 	pub smallvec_array: smallvec::SmallVec<[TestData;4]>,
+	pub hashmap: HashMap<String, u64>,
 	pub u8: u8,
 	#[inspect(range(min = 0., max = 12.0))]
 	pub double: f64,
@@ -86,6 +88,7 @@ impl Default for MyApp {
 			array: Default::default(),
 			#[cfg(feature = "smallvec")]
 			smallvec_array: smallvec::SmallVec::new(),
+			hashmap: Default::default(),
 			u8: Default::default(),
 			double: Default::default(),
 			float: Default::default(),

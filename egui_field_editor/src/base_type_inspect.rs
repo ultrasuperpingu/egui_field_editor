@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, RwLock};
 use egui::{Color32, Ui};
@@ -243,15 +244,7 @@ impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
 }
 
 impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
-	fn inspect_with_custom_id(
-		&mut self,
-		_parent_id: egui::Id,
-		label: &str,
-		tooltip: &str,
-		label_ratio: f32, 
-		read_only: bool,
-		ui: &mut Ui,
-	) -> egui::Response {
+	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui) -> egui::Response {
 		let mut res = inspect_collection(self, _parent_id, label, tooltip, label_ratio, read_only, ui);
 		let mut changed = false;
 		ui.add_enabled_ui(!read_only, |ui| {
@@ -276,6 +269,11 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
 
 }
 impl<T: crate::EguiInspect> crate::EguiInspect for &mut [T] {
+	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui) -> egui::Response {
+		inspect_collection(self, parent_id, label, tooltip, label_ratio, read_only, ui)
+	}
+}
+impl<T: crate::EguiInspect + Default + Clone> crate::EguiInspect for HashMap<String, T> {
 	fn inspect_with_custom_id(
 		&mut self,
 		parent_id: egui::Id,
@@ -285,10 +283,85 @@ impl<T: crate::EguiInspect> crate::EguiInspect for &mut [T] {
 		read_only: bool,
 		ui: &mut Ui,
 	) -> egui::Response {
-		inspect_collection(self, parent_id, label, tooltip, label_ratio, read_only, ui)
+		let id = if parent_id == egui::Id::NULL { ui.next_auto_id() } else { parent_id.with(label) };
+		let mut changed = false;
+
+		let collapsing_resp = egui::CollapsingHeader::new(format!("{label} [{}]", self.len()))
+			.id_salt(id.with("collapse"))
+			.show(ui, |ui| {
+				let keys: Vec<String> = self.keys().cloned().collect();
+				let mut resp = ui.response();
+
+				for key in keys {
+					if let Some(mut value) = self.remove(&key) {
+						let mut edited_key = key.clone();
+
+						let inner_res = ui.horizontal_top(|ui| {
+							let key_res = ui.add_enabled_ui(!read_only, |ui| {
+								let mut te = edited_key.clone();
+								let res = ui.add_sized(
+									[ui.available_width() * label_ratio, 0.0],
+									egui::TextEdit::singleline(&mut te),
+								);
+
+								if res.changed() && te != key {
+									edited_key = te.clone();
+									changed = true;
+								}
+
+								let value_res = value.inspect_with_custom_id(
+									id.with(&edited_key),
+									"",
+									tooltip,
+									0.0,
+									read_only,
+									ui,
+								);
+
+								res.union(value_res)
+							});
+							key_res
+						});
+
+						self.insert(edited_key, value);
+						resp = resp.union(inner_res.inner.inner);
+					}
+				}
+
+				resp
+			});
+
+		ui.add_enabled_ui(!read_only, |ui| {
+			ui.horizontal_top(|ui| {
+				ui.add_space(ui.available_width() - 50.0);
+
+				if ui.add(egui::Button::new("+").min_size(egui::Vec2::new(20.,20.))).clicked() {
+					let mut i = 0;
+					while self.contains_key(&i.to_string()) { i += 1; }
+					self.insert(i.to_string(), T::default());
+					changed = true;
+				}
+
+				if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20.,20.))).clicked() {
+					if let Some(last_key) = self.keys().last().cloned() {
+						self.remove(&last_key);
+						changed = true;
+					}
+				}
+			});
+		});
+
+		let mut final_res = ui.response();
+		if let Some(body_res) = collapsing_resp.body_returned {
+			final_res = final_res.union(body_res);
+		}
+		if changed {
+			final_res.mark_changed();
+		}
+
+		final_res
 	}
 }
-
 impl crate::EguiInspect for Color32 {
 	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
 		crate::add_color(self, label, tooltip, label_ratio, read_only, ui)
