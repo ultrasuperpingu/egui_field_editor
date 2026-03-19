@@ -376,7 +376,7 @@ fn get_code_for_struct_named_fields(fields: &FieldsNamed) -> TokenStream {
 			if !label.is_empty() {
 				let collapsing_resp = egui::CollapsingHeader::new(label).id_salt(id).show(ui, add_content);
 				let mut final_resp = ui.response();
-				if let Some(body_res) = collapsing_resp.body_response {
+				if let Some(body_res) = collapsing_resp.body_returned {
 					final_resp = final_resp.union(body_res);
 				}
 				final_resp
@@ -425,11 +425,11 @@ fn get_code_for_struct_unnamed_fields(fields: &FieldsUnnamed) -> TokenStream {
 			};
 			if !label.is_empty() {
 				let collapsing_resp = egui::CollapsingHeader::new(label).id_salt(id).show(ui, add_content);
-				let mut final_resp = ui.response();
-				if let Some(body_res) = collapsing_resp.body_response {
-					final_resp = final_resp.union(body_res);
+				if let Some(body_res) = collapsing_resp.body_returned {
+					body_res
+				} else {
+					ui.response()
 				}
-				final_resp
 			} else {
 				add_content(ui)
 			}
