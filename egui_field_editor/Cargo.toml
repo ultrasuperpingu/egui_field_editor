@@ -21,6 +21,7 @@ nalgebra-glm = { version = ">=0.20", features = [], optional=true }
 egui_extras = { version = ">=0.32", features = ["syntect", "datepicker"], optional=true }
 chrono = { version = ">=0.4", features = [], optional=true }
 rfd = { version = ">=0.13", features = [], optional=true }
+smallvec = { version = ">=0.13", features = [], optional=true }
 
 [dev-dependencies]
 eframe = ">=0.31"
@@ -35,10 +36,11 @@ wasm-bindgen-futures = "0.4.50"
 
 [features]
 default = []
-all = ["nalgebra_glm", "datepicker", "filepicker"]
+all = ["nalgebra_glm", "datepicker", "filepicker", "smallvec"]
 nalgebra_glm = ["dep:nalgebra-glm"]
 datepicker = ["dep:egui_extras", "egui_extras/datepicker", "dep:chrono"]
 filepicker = ["dep:rfd"]
+smallvec = ["dep:smallvec"]
 
 [[example]]
 name = "nalgebra_glm"

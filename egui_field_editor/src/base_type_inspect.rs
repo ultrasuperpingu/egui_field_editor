@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, RwLock};
-use std::ops::Add;
 use egui::{Color32, Ui};
 use crate::EguiInspect;
 
@@ -22,6 +21,7 @@ impl_inspect_number!(i8, u8);
 impl_inspect_number!(i16, u16);
 impl_inspect_number!(i32, u32);
 impl_inspect_number!(i64, u64);
+//impl_inspect_number!(i128, u128);
 impl_inspect_number!(isize, usize);
 
 impl<T:EguiInspect> EguiInspect for &mut T {
@@ -171,61 +171,74 @@ impl<T: crate::EguiInspect> egui_dnd::DragDropItem for EnumeratedItem<&mut T> {
 		egui::Id::new(self.salt_id.with(self.index))
 	}
 }
+/// Shared function to inspect a collection with DnD support
+fn inspect_collection<T: crate::EguiInspect>(
+	items: &mut [T],
+	parent_id: egui::Id,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	ui: &mut Ui
+) -> egui::Response {
+	let id = if parent_id == egui::Id::NULL { ui.next_auto_id() } else { parent_id.with(label) };
+	let parent_id_for_children = if parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
+
+	let mut changed = false;
+
+	let collapsing_resp = egui::CollapsingHeader::new(format!("{label} [{}]", items.len()))
+		.id_salt(id.with("collapse"))
+		.show(ui, |ui| {
+			
+			let dnd_resp = egui_dnd::dnd(ui, id.with("dnd"))
+				.with_animation_time(0.0)
+				.show(
+					items.iter_mut().enumerate().map(|(i, item)| EnumeratedItem { item, index: i, salt_id: id }),
+					|ui, item, handle, state| {
+						ui.horizontal(|ui| {
+							handle.ui(ui, |ui| {
+								ui.label(if state.dragged { "≡" } else { "☰" });
+							});
+							
+							let index = item.index;
+							let res = item.item.inspect_with_custom_id(
+								parent_id_for_children, 
+								&format!("Item {index}"), 
+								tooltip, 
+								label_ratio, 
+								read_only, 
+								ui
+							);
+							
+							if res.changed() {
+								changed = true;
+							}
+						});
+					},
+				);
+
+			if dnd_resp.is_drag_finished() {
+				dnd_resp.update_vec(items);
+				changed = true;
+			}
+
+			dnd_resp
+		});
+
+	let mut final_res = ui.response();
+	if let Some(body_res) = collapsing_resp.body_response {
+		final_res = final_res.union(body_res);
+	}
+	if changed {
+		final_res.mark_changed();
+	}
+	
+	final_res
+}
+
 impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
 	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui) -> egui::Response {
-		let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
-		let parent_id_for_children = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
-
-		let mut changed = false;
-
-		let collapsing_resp = egui::CollapsingHeader::new(format!("{label} [{N}]"))
-			.id_salt(id.with("collapse"))
-			.show(ui, |ui| {
-				
-				let dnd_resp = egui_dnd::dnd(ui, id.with("dnd"))
-					.with_animation_time(0.0)
-					.show(
-						self.iter_mut().enumerate().map(|(i, item)| EnumeratedItem { item, index: i, salt_id: id }),
-						|ui, item, handle, state| {
-							ui.horizontal(|ui| {
-								handle.ui(ui, |ui| {
-									ui.label(if state.dragged { "≡" } else { "☰" });
-								});
-								
-								let index = item.index;
-								let res = item.item.inspect_with_custom_id(
-									parent_id_for_children, 
-									&format!("Item {index}"), 
-									tooltip, 
-									label_ratio, 
-									read_only, 
-									ui
-								);
-								
-								if res.changed() {
-									changed = true;
-								}
-							});
-						},
-					);
-
-				if dnd_resp.is_drag_finished() {
-					dnd_resp.update_vec(self);
-					changed = true;
-				}
-
-				dnd_resp
-			});
-
-		let mut final_res = ui.response();
-		if let Some(body_res) = collapsing_resp.body_response {
-			final_res = final_res.union(body_res);
-		}
-		if changed {
-			final_res.mark_changed();
-		}
-		
-		final_res
+		inspect_collection(self, _parent_id, label, tooltip, label_ratio, read_only, ui)
 	}
 }
 
@@ -239,37 +252,8 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
 		read_only: bool,
 		ui: &mut Ui,
 	) -> egui::Response {
-		let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
-		let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
+		let mut res = inspect_collection(self, _parent_id, label, tooltip, label_ratio, read_only, ui);
 		let mut changed = false;
-		let collapsing_resp = egui::CollapsingHeader::new(label.to_string().add(format!("[{}]", self.len()).as_str())).id_salt(id.with("collapse")).show(ui, |ui| {
-			let dnd_resp = egui_dnd::dnd(ui, id.with("dnd"))
-				.with_animation_time(0.0)
-				.show(
-					self
-						.iter_mut()
-						.enumerate()
-						.map(|(i, item)| EnumeratedItem { item, index: i, salt_id:id}),
-					|ui, item, handle, state| {
-						ui.horizontal(|ui| {
-							handle.ui(ui, |ui| {
-								if state.dragged {
-									ui.label("≡");
-								} else {
-									ui.label("☰");
-								}
-							});
-							let index = item.index;
-							let r = item.item.inspect_with_custom_id(parent_id, format!("Item {index}").as_str(), tooltip, label_ratio, read_only, ui);
-							if r.changed() { changed = true; }
-						});
-					},
-				);
-				if dnd_resp.is_drag_finished() {
-					dnd_resp.update_vec(self);
-					changed = true;
-				}
-		});
 		ui.add_enabled_ui(!read_only, |ui| {
 			ui.horizontal_top(|ui| {
 				ui.add_space(ui.available_width() - 50.);
@@ -284,16 +268,25 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
 				}
 			});
 		});
-		let mut final_res = ui.response();
-		if let Some(body_res) = collapsing_resp.body_response {
-			final_res = final_res.union(body_res);
-		}
 		if changed {
-			final_res.mark_changed();
+			res.mark_changed();
 		}
-		final_res
+		res
 	}
 
+}
+impl<T: crate::EguiInspect> crate::EguiInspect for &mut [T] {
+	fn inspect_with_custom_id(
+		&mut self,
+		parent_id: egui::Id,
+		label: &str,
+		tooltip: &str,
+		label_ratio: f32,
+		read_only: bool,
+		ui: &mut Ui,
+	) -> egui::Response {
+		inspect_collection(self, parent_id, label, tooltip, label_ratio, read_only, ui)
+	}
 }
 
 impl crate::EguiInspect for Color32 {
@@ -574,6 +567,41 @@ mod datepicker {
 			} else {
 				crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
 			}
+		}
+	}
+}
+
+#[cfg(feature = "smallvec")]
+mod smallvec {
+	use crate::EguiInspect;
+	use smallvec::SmallVec;
+
+	impl<T, A> EguiInspect for SmallVec<A>
+	where
+		T: EguiInspect + Default,
+		A: smallvec::Array<Item = T>,
+	{
+		fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+			let mut res = super::inspect_collection(self.as_mut_slice(), parent_id, label, tooltip, label_ratio, read_only, ui);
+			let mut changed = false;
+			ui.add_enabled_ui(!read_only, |ui| {
+				ui.horizontal_top(|ui| {
+					ui.add_space(ui.available_width() - 50.);
+					if ui.add(egui::Button::new("+").min_size(egui::Vec2::new(20.,20.))).clicked() {
+						self.push(T::default());
+						changed = true;
+					}
+					if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20.,20.))).clicked() {
+						if self.pop().is_some() {
+							changed = true;
+						}
+					}
+				});
+			});
+			if changed {
+				res.mark_changed();
+			}
+			res
 		}
 	}
 }

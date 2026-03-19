@@ -66,6 +66,8 @@ struct MyApp {
 	pub multiline:String,
 	pub vector: Vec<TestData>,
 	pub array: [TestData;4],
+	#[cfg(feature = "smallvec")]
+	pub smallvec_array: smallvec::SmallVec<[TestData;4]>,
 	pub u8: u8,
 	#[inspect(range(min = 0., max = 12.0))]
 	pub double: f64,
@@ -78,7 +80,19 @@ struct MyApp {
 }
 impl Default for MyApp {
 	fn default() -> Self {
-		Self { multiline: Default::default(), vector: Default::default(), array: Default::default(), u8: Default::default(), double: Default::default(), float: Default::default(), my_enum: Default::default(), char: Default::default(), ipv4: Ipv4Addr::UNSPECIFIED }
+		Self {
+			multiline: Default::default(),
+			vector: Default::default(),
+			array: Default::default(),
+			#[cfg(feature = "smallvec")]
+			smallvec_array: smallvec::SmallVec::new(),
+			u8: Default::default(),
+			double: Default::default(),
+			float: Default::default(),
+			my_enum: Default::default(),
+			char: Default::default(), 
+			ipv4: Ipv4Addr::UNSPECIFIED
+		}
 	}
 }
 impl MyApp {
