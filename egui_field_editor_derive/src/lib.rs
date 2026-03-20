@@ -87,6 +87,16 @@ struct ExecuteBtn {
 fn bool_true() -> bool {
 	true
 }
+#[derive(Debug, FromMeta, Default)]
+#[darling(default)]
+struct HashMapOptions {
+	/// Allow adding new entries (default: false)
+	allow_add_delete: bool,
+	/// Allow editing keys (default: false)
+	editable_keys: bool,
+	/// Custom function to inspect values: fn(value: &mut T, parent_id: Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui) -> Response
+	custom_fn: Option<String>,
+}
 #[derive(Debug, Default, FromDeriveInput)]
 #[darling(attributes(inspect), default)]
 struct ObjectAttributeArgs {
@@ -120,7 +130,9 @@ struct AttributeArgs {
 	/// Force edition from string conversion (needs type to implement FromString and Display)
 	from_string: bool,
 	/// Use a custom function instead of calling [`EguiInspect::inspect_with_custom_id`]
-	custom_fn: Option<String>
+	custom_fn: Option<String>,
+	/// HashMap configuration options (allow_add_delete, editable_keys)
+	hashmap: Option<HashMapOptions>,
 }
 
 #[proc_macro_derive(EguiInspect, attributes(inspect))]
@@ -291,7 +303,7 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 
 	quote_spanned! {
 		enum_name.span() => {
-			let label_ratio = label_ratio.clamp(0.1, 0.9);
+			let label_ratio = label_ratio.clamp(0.05, 0.95);
 
 			let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
 			//TODO: find a way to use it (if only Unit variants) or don't declare it if not needed

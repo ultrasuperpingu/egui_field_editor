@@ -12,3 +12,5 @@ cargo build --target wasm32-unknown-unknown --example nalgebra_glm_web --release
 wasm-bindgen target/wasm32-unknown-unknown/release/examples/nalgebra_glm_web.wasm --out-dir docs/nalgebra_glm --target web
 rem cargo build --target wasm32-unknown-unknown --example filepicker_web --release --features="filepicker"
 rem wasm-bindgen target/wasm32-unknown-unknown/release/examples/filepicker_web.wasm --out-dir docs/filepicker --target web
+cargo build --target wasm32-unknown-unknown --example hashmap_web --release
+wasm-bindgen target/wasm32-unknown-unknown/release/examples/hashmap_web.wasm --out-dir docs/hashmap --target web

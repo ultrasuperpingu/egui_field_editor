@@ -7,7 +7,7 @@ use egui_extras::syntax_highlighting::{code_view_ui, CodeTheme};
 use egui_field_editor::{EguiInspect, EguiInspector};
 use eframe::egui;
 
-#[derive(EguiInspect, Debug, Default)]
+#[derive(EguiInspect, Debug, Default, Clone)]
 pub struct TestData(
 	#[inspect(name="Name", tooltip="You can name tuple field")]
 	String,
@@ -23,7 +23,7 @@ pub struct TestData(
 	#[allow(dead_code)]
 	MyEnum
 );
-#[derive(EguiInspect, Debug, Default, PartialEq)]
+#[derive(EguiInspect, Debug, Default, PartialEq, Clone)]
 pub enum MyEnum {
 	#[default]
 	UnitVariant,
@@ -82,13 +82,16 @@ struct MyApp {
 }
 impl Default for MyApp {
 	fn default() -> Self {
+		let mut hashmap = HashMap::new();
+		hashmap.insert("value1".into(), 0);
+		hashmap.insert("value2".into(), 12);
 		Self {
 			multiline: Default::default(),
 			vector: Default::default(),
 			array: Default::default(),
 			#[cfg(feature = "smallvec")]
 			smallvec_array: smallvec::SmallVec::new(),
-			hashmap: Default::default(),
+			hashmap,
 			u8: Default::default(),
 			double: Default::default(),
 			float: Default::default(),

@@ -420,7 +420,7 @@ pub fn add_custom_ui<F>(
 where
 	F: FnOnce(&mut egui::Ui, f32) -> egui::Response,
 {
-	let label_ratio = label_ratio.clamp(0.1, 0.9);
+	let label_ratio = label_ratio.clamp(0.05, 0.95);
 
 	let available_width = ui.available_width();
 	let label_width = available_width * label_ratio;
@@ -545,7 +545,7 @@ pub fn add_bool(data: &mut bool, label: &str, tooltip: &str, label_ratio: f32, r
 ///
 /// - [`egui::Ui::color_edit_button_srgba`]
 pub fn add_color32(data: &mut egui::Color32, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
-	let label_ratio = label_ratio.clamp(0.1, 0.9);
+	let label_ratio = label_ratio.clamp(0.05, 0.95);
 
 	let available_width = ui.available_width();
 	let label_width = available_width * label_ratio;
@@ -869,5 +869,258 @@ impl_mat_inspect!(add_mat4x2, Mat4x2, [[m11, m12], [m21, m22], [m31, m32], [m41,
 impl_mat_inspect!(add_mat4x3, Mat4x3, [[m11, m12, m13], [m21, m22, m23], [m31, m32, m33], [m41, m42, m43]]);
 #[cfg(feature = "nalgebra_glm")]
 impl_mat_inspect!(add_mat4x4, Mat4x4, [[m11, m12, m13, m14], [m21, m22, m23, m24], [m31, m32, m33, m34], [m41, m42, m43, m44]]);
+
+/// Display and edit a HashMap<String, T> with configurable behavior
+///
+/// # Parameters
+/// - `data`: The HashMap to inspect
+/// - `parent_id`: Parent egui ID
+/// - `label`: Label for the field
+/// - `tooltip`: Tooltip text
+/// - `label_ratio`: Ratio for label width
+/// - `read_only`: If true, disables all editing
+/// - `allow_add`: Show button to add new entries
+/// - `allow_delete`: Show button to delete entries
+/// - `editable_keys`: Allow editing the string keys
+/// - `ui`: The egui Ui context
+pub fn add_hashmap<T: EguiInspect + Default + Clone>(
+	data: &mut std::collections::HashMap<String, T>,
+	parent_id: egui::Id,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	allow_add_delete: bool,
+	editable_keys: bool,
+	ui: &mut egui::Ui,
+) -> egui::Response {
+	let id = if parent_id == egui::Id::NULL { 
+		ui.next_auto_id() 
+	} else { 
+		parent_id.with(label) 
+	};
+	let mut changed = false;
+
+	let collapsing_resp = egui::CollapsingHeader::new(format!("{label} [{}]", data.len()))
+		.id_salt(id.with("collapse"))
+		.show(ui, |ui| {
+			let keys: Vec<String> = data.keys().cloned().collect();
+			let mut resp = ui.response();
+
+			for key in keys {
+				if let Some(mut value) = data.remove(&key) {
+					let mut edited_key = key.clone();
+
+					let inner_res = if editable_keys {
+						ui.horizontal_top(|ui| {
+							let key_res = ui.add_enabled_ui(!read_only, |ui| {
+								let mut te = edited_key.clone();
+								let res = ui.add_sized(
+									[ui.available_width() * label_ratio, 0.0],
+									egui::TextEdit::singleline(&mut te),
+								);
+
+								if res.changed() && te != key {
+									edited_key = te.clone();
+									changed = true;
+								}
+
+								let value_res = ui.vertical(|ui| {
+									value.inspect_with_custom_id(
+										id.with(&edited_key),
+										"",
+										tooltip,
+										0.0,
+										read_only,
+										ui,
+									)
+								}).inner;
+
+								res.union(value_res)
+							});
+							key_res
+						})
+					} else {
+						ui.horizontal_top(|ui| {
+							let key_res = ui.add_enabled_ui(!read_only, |ui| {
+								let value_res = ui.vertical(|ui| {
+									value.inspect_with_custom_id(
+										id.with(&edited_key),
+										&key,
+										tooltip,
+										label_ratio,
+										read_only,
+										ui,
+									)
+								}).inner;
+
+								value_res
+							});
+							key_res
+						})
+					};
+
+					data.insert(edited_key, value);
+					resp = resp.union(inner_res.inner.inner);
+				}
+			}
+
+			resp
+		});
+
+	if allow_add_delete {
+		ui.add_enabled_ui(!read_only, |ui| {
+			ui.horizontal_top(|ui| {
+				ui.add_space(ui.available_width() - 50.0);
+
+				if ui.add(egui::Button::new("+").min_size(egui::Vec2::new(20., 20.))).clicked() {
+					let mut i = 0;
+					while data.contains_key(&i.to_string()) { 
+						i += 1; 
+					}
+					data.insert(i.to_string(), T::default());
+					changed = true;
+				}
+				if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20., 20.))).clicked() {
+					if let Some(last_key) = data.keys().last().cloned() {
+						data.remove(&last_key);
+						changed = true;
+					}
+				}
+			});
+		});
+	}
+	let mut final_res = ui.response();
+	if let Some(body_res) = collapsing_resp.body_returned {
+		final_res = final_res.union(body_res);
+	}
+	if changed {
+		final_res.mark_changed();
+	}
+
+	final_res
+}
+
+/// Display and edit a HashMap<String, T> with configurable behavior and custom value inspector
+///
+/// This variant allows you to provide a custom function for inspecting values.
+///
+/// # Parameters
+/// - `data`: The HashMap to inspect
+/// - `parent_id`: Parent egui ID
+/// - `label`: Label for the field
+/// - `tooltip`: Tooltip text
+/// - `label_ratio`: Ratio for label width
+/// - `read_only`: If true, disables all editing
+/// - `allow_add_delete`: Show button to add/delete entries
+/// - `editable_keys`: Allow editing the string keys
+/// - `custom_fn`: Custom function to inspect values: `fn(value: &mut T, parent_id: Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui) -> Response`
+/// - `ui`: The egui Ui context
+pub fn add_hashmap_custom<T, F>(
+	data: &mut std::collections::HashMap<String, T>,
+	parent_id: egui::Id,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	allow_add_delete: bool,
+	editable_keys: bool,
+	custom_fn: F,
+	ui: &mut egui::Ui,
+) -> egui::Response
+where
+	T: Default + Clone,
+	F: Fn(&mut T, egui::Id, &str, &str, f32, bool, &mut egui::Ui) -> egui::Response,
+{
+	let id = if parent_id == egui::Id::NULL { 
+		ui.next_auto_id() 
+	} else { 
+		parent_id.with(label) 
+	};
+	let mut changed = false;
+
+	let collapsing_resp = egui::CollapsingHeader::new(format!("{label} [{}]", data.len()))
+		.id_salt(id.with("collapse"))
+		.show(ui, |ui| {
+			let keys: Vec<String> = data.keys().cloned().collect();
+			let mut resp = ui.response();
+
+			for key in keys {
+				if let Some(mut value) = data.remove(&key) {
+					let mut edited_key = key.clone();
+
+					let inner_res = if editable_keys {
+						ui.horizontal_top(|ui| {
+							let key_res = ui.add_enabled_ui(!read_only, |ui| {
+								let mut te = edited_key.clone();
+								let res = ui.add_sized(
+									[ui.available_width() * label_ratio, 0.0],
+									egui::TextEdit::singleline(&mut te),
+								);
+
+								if res.changed() && te != key {
+									edited_key = te.clone();
+									changed = true;
+								}
+
+								let value_res = ui.vertical(|ui| {
+									custom_fn(&mut value, id.with(&edited_key), "", tooltip, 0.0, read_only, ui)
+								}).inner;
+
+								res.union(value_res)
+							});
+							key_res
+						})
+					} else {
+						ui.horizontal_top(|ui| {
+							let key_res = ui.add_enabled_ui(!read_only, |ui| {
+								custom_fn(&mut value, id.with(&edited_key), &key, tooltip, label_ratio, read_only, ui)
+							});
+							key_res
+						})
+					};
+
+					data.insert(edited_key, value);
+					resp = resp.union(inner_res.inner.inner);
+				}
+			}
+
+			resp
+		});
+
+	// Add/Delete buttons - only shown if operations are allowed
+	if allow_add_delete {
+		ui.add_enabled_ui(!read_only, |ui| {
+			ui.horizontal_top(|ui| {
+				ui.add_space(ui.available_width() - 50.0);
+
+				if ui.add(egui::Button::new("+").min_size(egui::Vec2::new(20., 20.))).clicked() {
+					let mut i = 0;
+					while data.contains_key(&i.to_string()) { 
+						i += 1; 
+					}
+					data.insert(i.to_string(), T::default());
+					changed = true;
+				}
+				if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20., 20.))).clicked() {
+					if let Some(last_key) = data.keys().last().cloned() {
+						data.remove(&last_key);
+						changed = true;
+					}
+				}
+			});
+		});
+	}
+	
+	let mut final_res = ui.response();
+	if let Some(body_res) = collapsing_resp.body_returned {
+		final_res = final_res.union(body_res);
+	}
+	if changed {
+		final_res.mark_changed();
+	}
+
+	final_res
+}
 
 mod base_type_inspect;

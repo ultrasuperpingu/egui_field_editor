@@ -176,6 +176,64 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 				}).inner);
 			}
 		};
+	} else if let Some(hmap_opts) = &attrs.hashmap {
+		let allow_add_delete = hmap_opts.allow_add_delete;
+		let editable_keys = hmap_opts.editable_keys;
+		
+		if let Some(custom_fn) = &hmap_opts.custom_fn {
+			match custom_fn.parse::<TokenStream>() {
+				Ok(custom_fn_ident) => {
+					return quote_spanned! {
+						field.span() => {
+							let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
+							let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
+							combine!(ui.scope(|ui| {
+								egui_field_editor::add_hashmap_custom(
+									#field_access,
+									parent_id,
+									&#name_str,
+									#tooltip,
+									label_ratio,
+									read_only || #read_only,
+									#allow_add_delete,
+									#editable_keys,
+									|value, pid, lbl, tp, lr, ro, u| { #custom_fn_ident(value, pid, lbl, tp, lr, ro, u) },
+									ui
+								)
+							}).inner);
+						}
+					};
+				},
+				Err(e) => {
+					let msg = e.to_string();
+					return quote_spanned! {
+						field.span() => {
+							compile_error!(#msg);
+						}
+					};
+				}
+			}
+		} else {
+			return quote_spanned! {
+				field.span() => {
+					let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
+					let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
+					combine!(ui.scope(|ui| {
+						egui_field_editor::add_hashmap(
+							#field_access,
+							parent_id,
+							&#name_str,
+							#tooltip,
+							label_ratio,
+							read_only || #read_only,
+							#allow_add_delete,
+							#editable_keys,
+							ui
+						)
+					}).inner);
+				}
+			};
+		}
 	}
 
 	quote_spanned! {
