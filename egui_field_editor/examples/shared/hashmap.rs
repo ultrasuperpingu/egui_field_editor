@@ -27,7 +27,7 @@ pub struct ComplexValue {
 
 // Main app showcasing different HashMap configurations
 #[derive(EguiInspect)]
-struct HashMapShowcaseApp {
+pub struct MyApp {
 	// 1. Read-only HashMap (default behavior)
 	#[inspect(name="Read-Only [Default]", tooltip="Cannot add, remove, or edit keys")]
 	pub read_only_map: HashMap<String, u64>,
@@ -52,7 +52,7 @@ struct HashMapShowcaseApp {
 	pub custom_edit: HashMap<String, Option<ComplexValue>>,
 }
 
-impl Default for HashMapShowcaseApp {
+impl Default for MyApp {
 	fn default() -> Self {
 		let mut read_only_map = HashMap::new();
 		read_only_map.insert("key1".to_string(), 100u64);
@@ -159,7 +159,7 @@ fn custom_hashmap_editor(
 	}).inner
 }
 
-impl eframe::App for HashMapShowcaseApp {
+impl eframe::App for MyApp {
 	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 		let code = include_str!("hashmap.rs");
 		egui::SidePanel::right("right_panel")

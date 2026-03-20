@@ -2,25 +2,28 @@
 #![no_main]
 #![cfg(target_arch = "wasm32")]
 
-use eframe::wasm_bindgen::prelude::*;
+use eframe::web_sys;
+use eframe::wasm_bindgen::JsCast;
 
-mod shared {
-	pub mod hashmap_showcase;
-}
+include!("shared/hashmap.rs");
 
-use shared::hashmap_showcase::HashMapShowcaseApp;
-
-#[wasm_bindgen]
-pub async fn main_web(canvas_id: &str) {
+#[wasm_bindgen::prelude::wasm_bindgen(start)]
+pub fn main() -> Result<(), wasm_bindgen::JsValue> {
+	let app = MyApp::default();
 	let web_options = eframe::WebOptions::default();
+	let runner = eframe::WebRunner::new();
 
-	wasm_bindgen_futures::spawn_local(async {
-		let _ = eframe::WebRunner::new()
-			.start(
-				canvas_id,
-				web_options,
-				Box::new(|_cc| Ok(Box::new(HashMapShowcaseApp::default()))),
-			)
+	let canvas = web_sys::window()
+		.and_then(|win| win.document())
+		.and_then(|doc| doc.get_element_by_id("canvas_id"))
+		.and_then(|elem| elem.dyn_into::<web_sys::HtmlCanvasElement>().ok())
+		.expect("Failed to get canvas element");
+
+	wasm_bindgen_futures::spawn_local(async move {
+		let _ = runner
+			.start(canvas, web_options, Box::new(|_cc| Ok(Box::new(app))))
 			.await;
 	});
+
+	Ok(())
 }
