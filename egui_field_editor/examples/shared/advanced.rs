@@ -65,6 +65,9 @@ pub enum MyEnum {
 struct MyApp {
 	#[inspect(multiline=8)]
 	pub multiline:String,
+	pub test_data: TestData,
+	#[inspect(transparent=true)]
+	pub transparent_test_data: TestData,
 	pub vector: Vec<TestData>,
 	pub array: [TestData;4],
 	#[cfg(feature = "smallvec")]
@@ -87,6 +90,8 @@ impl Default for MyApp {
 		hashmap.insert("value2".into(), 12);
 		Self {
 			multiline: Default::default(),
+			test_data: Default::default(),
+			transparent_test_data: Default::default(),
 			vector: Default::default(),
 			array: Default::default(),
 			#[cfg(feature = "smallvec")]

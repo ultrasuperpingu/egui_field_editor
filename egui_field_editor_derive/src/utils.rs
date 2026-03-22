@@ -43,15 +43,19 @@ pub fn prettify_name(s: &str) -> String {
 pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs: &AttributeArgs, default_field_name:String) -> TokenStream {
 	let name = &field.ident;
 
-	let name_str = match &attrs.name {
-		Some(n) => n.clone(),
-		None => {
-			if let Some(name) = name {
-				prettify_name(&name.to_string())
-			} else {
-				prettify_name(&default_field_name.to_string())
-			}
-		},
+	let name_str = if attrs.transparent {
+		"".into()
+	} else {
+		match &attrs.name {
+			Some(n) => n.clone(),
+			None => {
+				if let Some(name) = name {
+					prettify_name(&name.to_string())
+				} else {
+					prettify_name(&default_field_name.to_string())
+				}
+			},
+		}
 	};
 	let read_only = attrs.read_only;
 	let slider= &attrs.slider;

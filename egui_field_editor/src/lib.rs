@@ -900,74 +900,78 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 		parent_id.with(label) 
 	};
 	let mut changed = false;
+	let data_len = data.len();
+	let mut add_content = |ui: &mut Ui| {
+		let keys: Vec<String> = data.keys().cloned().collect();
+		let mut resp = ui.response();
 
-	let collapsing_resp = egui::CollapsingHeader::new(format!("{label} [{}]", data.len()))
-		.id_salt(id.with("collapse"))
-		.show(ui, |ui| {
-			let keys: Vec<String> = data.keys().cloned().collect();
-			let mut resp = ui.response();
+		for key in keys {
+			if let Some(mut value) = data.remove(&key) {
+				let mut edited_key = key.clone();
 
-			for key in keys {
-				if let Some(mut value) = data.remove(&key) {
-					let mut edited_key = key.clone();
+				let inner_res = if editable_keys {
+					ui.horizontal_top(|ui| {
+						let key_res = ui.add_enabled_ui(!read_only, |ui| {
+							let mut te = edited_key.clone();
+							let res = ui.add_sized(
+								[ui.available_width() * label_ratio, 0.0],
+								egui::TextEdit::singleline(&mut te),
+							);
 
-					let inner_res = if editable_keys {
-						ui.horizontal_top(|ui| {
-							let key_res = ui.add_enabled_ui(!read_only, |ui| {
-								let mut te = edited_key.clone();
-								let res = ui.add_sized(
-									[ui.available_width() * label_ratio, 0.0],
-									egui::TextEdit::singleline(&mut te),
-								);
+							if res.changed() && te != key {
+								edited_key = te.clone();
+								changed = true;
+							}
 
-								if res.changed() && te != key {
-									edited_key = te.clone();
-									changed = true;
-								}
+							let value_res = ui.vertical(|ui| {
+								value.inspect_with_custom_id(
+									id.with(&edited_key),
+									"",
+									tooltip,
+									0.0,
+									read_only,
+									ui,
+								)
+							}).inner;
 
-								let value_res = ui.vertical(|ui| {
-									value.inspect_with_custom_id(
-										id.with(&edited_key),
-										"",
-										tooltip,
-										0.0,
-										read_only,
-										ui,
-									)
-								}).inner;
+							res.union(value_res)
+						});
+						key_res
+					})
+				} else {
+					ui.horizontal_top(|ui| {
+						let key_res = ui.add_enabled_ui(!read_only, |ui| {
+							let value_res = ui.vertical(|ui| {
+								value.inspect_with_custom_id(
+									id.with(&edited_key),
+									&key,
+									tooltip,
+									label_ratio,
+									read_only,
+									ui,
+								)
+							}).inner;
 
-								res.union(value_res)
-							});
-							key_res
-						})
-					} else {
-						ui.horizontal_top(|ui| {
-							let key_res = ui.add_enabled_ui(!read_only, |ui| {
-								let value_res = ui.vertical(|ui| {
-									value.inspect_with_custom_id(
-										id.with(&edited_key),
-										&key,
-										tooltip,
-										label_ratio,
-										read_only,
-										ui,
-									)
-								}).inner;
+							value_res
+						});
+						key_res
+					})
+				};
 
-								value_res
-							});
-							key_res
-						})
-					};
-
-					data.insert(edited_key, value);
-					resp = resp.union(inner_res.inner.inner);
-				}
+				data.insert(edited_key, value);
+				resp = resp.union(inner_res.inner.inner);
 			}
+		}
 
-			resp
-		});
-
+		resp
+	};
+	let content_resp = if !label.is_empty() {
+		egui::CollapsingHeader::new(format!("{label} [{}]", data_len))
+			.id_salt(id.with("collapse"))
+			.show(ui, add_content).body_returned
+	} else {
+		Some(add_content(ui))
+	};
 	if allow_add_delete {
 		ui.add_enabled_ui(!read_only, |ui| {
 			ui.horizontal_top(|ui| {
@@ -991,7 +995,7 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 		});
 	}
 	let mut final_res = ui.response();
-	if let Some(body_res) = collapsing_resp.body_returned {
+	if let Some(body_res) = content_resp {
 		final_res = final_res.union(body_res);
 	}
 	if changed {
@@ -1038,55 +1042,61 @@ where
 		parent_id.with(label) 
 	};
 	let mut changed = false;
+	let data_len = data.len();
+	let mut add_content = |ui: &mut Ui| {
+		let keys: Vec<String> = data.keys().cloned().collect();
+		let mut resp = ui.response();
 
-	let collapsing_resp = egui::CollapsingHeader::new(format!("{label} [{}]", data.len()))
-		.id_salt(id.with("collapse"))
-		.show(ui, |ui| {
-			let keys: Vec<String> = data.keys().cloned().collect();
-			let mut resp = ui.response();
+		for key in keys {
+			if let Some(mut value) = data.remove(&key) {
+				let mut edited_key = key.clone();
 
-			for key in keys {
-				if let Some(mut value) = data.remove(&key) {
-					let mut edited_key = key.clone();
+				let inner_res = if editable_keys {
+					ui.horizontal_top(|ui| {
+						let key_res = ui.add_enabled_ui(!read_only, |ui| {
+							let mut te = edited_key.clone();
+							let res = ui.add_sized(
+								[ui.available_width() * label_ratio, 0.0],
+								egui::TextEdit::singleline(&mut te),
+							);
 
-					let inner_res = if editable_keys {
-						ui.horizontal_top(|ui| {
-							let key_res = ui.add_enabled_ui(!read_only, |ui| {
-								let mut te = edited_key.clone();
-								let res = ui.add_sized(
-									[ui.available_width() * label_ratio, 0.0],
-									egui::TextEdit::singleline(&mut te),
-								);
+							if res.changed() && te != key {
+								edited_key = te.clone();
+								changed = true;
+							}
 
-								if res.changed() && te != key {
-									edited_key = te.clone();
-									changed = true;
-								}
+							let value_res = ui.vertical(|ui| {
+								custom_fn(&mut value, id.with(&edited_key), "", tooltip, 0.0, read_only, ui)
+							}).inner;
 
-								let value_res = ui.vertical(|ui| {
-									custom_fn(&mut value, id.with(&edited_key), "", tooltip, 0.0, read_only, ui)
-								}).inner;
+							res.union(value_res)
+						});
+						key_res
+					})
+				} else {
+					ui.horizontal_top(|ui| {
+						let key_res = ui.add_enabled_ui(!read_only, |ui| {
+							custom_fn(&mut value, id.with(&edited_key), &key, tooltip, label_ratio, read_only, ui)
+						});
+						key_res
+					})
+				};
 
-								res.union(value_res)
-							});
-							key_res
-						})
-					} else {
-						ui.horizontal_top(|ui| {
-							let key_res = ui.add_enabled_ui(!read_only, |ui| {
-								custom_fn(&mut value, id.with(&edited_key), &key, tooltip, label_ratio, read_only, ui)
-							});
-							key_res
-						})
-					};
-
-					data.insert(edited_key, value);
-					resp = resp.union(inner_res.inner.inner);
-				}
+				data.insert(edited_key, value);
+				resp = resp.union(inner_res.inner.inner);
 			}
+		}
 
-			resp
-		});
+		resp
+	};
+
+	let content_resp = if !label.is_empty() {
+		egui::CollapsingHeader::new(format!("{label} [{}]", data_len))
+			.id_salt(id.with("collapse"))
+			.show(ui, add_content).body_returned
+	} else {
+		Some(add_content(ui))
+	};
 
 	// Add/Delete buttons - only shown if operations are allowed
 	if allow_add_delete {
@@ -1113,7 +1123,7 @@ where
 	}
 	
 	let mut final_res = ui.response();
-	if let Some(body_res) = collapsing_resp.body_returned {
+	if let Some(body_res) = content_resp {
 		final_res = final_res.union(body_res);
 	}
 	if changed {

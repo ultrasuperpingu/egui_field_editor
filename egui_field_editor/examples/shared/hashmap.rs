@@ -28,28 +28,26 @@ pub struct ComplexValue {
 // Main app showcasing different HashMap configurations
 #[derive(EguiInspect)]
 pub struct MyApp {
-	// 1. Read-only HashMap (default behavior)
-	#[inspect(name="Read-Only [Default]", tooltip="Cannot add, remove, or edit keys")]
+	#[inspect(name="Read-Only Key [Default]", tooltip="Cannot add, remove, or edit keys")]
 	pub read_only_map: HashMap<String, u64>,
 
-	// 2. Editable values but locked keys
 	#[inspect(name="Editable Values", hashmap(allow_add_delete=true, editable_keys=false))]
 	pub editable_values: HashMap<String, SimpleValue>,
 
-	// 3. Fully editable HashMap (keys and values)
 	#[inspect(name="Fully Editable", hashmap(allow_add_delete=true, editable_keys=true))]
 	pub fully_editable: HashMap<String, String>,
 
-	// 4. Complex values with default (read-only)
 	#[inspect(name="Complex Values [Read-Only Key]", tooltip="Complex data type inspection")]
 	pub complex_readonly: HashMap<String, ComplexValue>,
 
-	// 5. Complex values with edit/add capability
 	#[inspect(name="Complex Values [Editable Key]", hashmap(allow_add_delete=true, editable_keys=true))]
 	pub complex_editable: HashMap<String, ComplexValue>,
 
 	#[inspect(name="Custom Values Edition", hashmap(custom_fn="custom_hashmap_editor"))]
 	pub custom_edit: HashMap<String, Option<ComplexValue>>,
+
+	#[inspect(transparent=true)]
+	pub transparent: HashMap<String, Option<ComplexValue>>,
 }
 
 impl Default for MyApp {
@@ -129,13 +127,33 @@ impl Default for MyApp {
 			})
 		);
 		custom_edit.insert("nobody".to_string(), None);
+		let mut transparent = HashMap::new();
+		transparent.insert(
+			"charlie".to_string(),
+			Some(ComplexValue {
+				id: 3,
+				name: "Charlie".to_string(),
+				color: Color32::from_rgb(0, 0, 255),
+				score: 75.5,
+			})
+		);
+		transparent.insert(
+			"alfred".to_string(),
+			Some(ComplexValue {
+				id: 8,
+				name: "Alfred".to_string(),
+				color: Color32::from_rgb(140, 25, 137),
+				score: 15.2,
+			})
+		);
 		Self {
 			read_only_map,
 			editable_values,
 			fully_editable,
 			complex_readonly,
 			complex_editable,
-			custom_edit
+			custom_edit,
+			transparent
 		}
 	}
 }
@@ -177,14 +195,6 @@ impl eframe::App for MyApp {
 				}
 			});
 		egui::CentralPanel::default().show(ctx, |ui| {
-			ui.label("📚 HashMap Configuration Examples:");
-			ui.separator();
-			ui.label("1️⃣ Read-Only [Default]: No modifications allowed");
-			ui.label("2️⃣ Editable Values: Can modify values and add/remove entries, but keys are fixed");
-			ui.label("3️⃣ Fully Editable: Can edit both keys and values, add/remove entries");
-			ui.label("4️⃣ Complex Values [Read-Only]: Display complex structured data");
-			ui.label("5️⃣ Complex Values [Editable]: Modify complex structured values");
-			ui.separator();
 			egui::ScrollArea::vertical()
 				.id_salt("code_scrolling")
 				.show(ui, |ui| {

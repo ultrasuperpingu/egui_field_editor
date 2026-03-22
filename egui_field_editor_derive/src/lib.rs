@@ -113,6 +113,8 @@ struct AttributeArgs {
 	hidden: bool,
 	/// Display the field as readonly
 	read_only: bool,
+	/// Don't display a label for this field and don't indent (child fields will be display as they were directly field of the parent struct).
+	transparent: bool,
 	/// Use slider function for numbers
 	slider: Option<Range<f32>>,
 	/// Display text on multiple line
@@ -260,6 +262,7 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 			has_hidden = true;
 			continue;
 		}
+		// TODO: if selected variant is transparent , there should be no combobox.
 		if let Some(name) = &attrs.name {
 			label = name.clone();
 		}
@@ -537,7 +540,7 @@ fn get_code_blocks_for_unamed_variant(
 	let bindings_for_match = bindings.clone();
 	variant_content_edit.push(quote! {
 		#enum_name::#variant_name(#(#bindings_for_match),* ) => {
-			ui.indent(id, |ui| {
+			let mut add_content = |ui:&mut egui::Ui| {
 				let mut res: Option<egui::Response> = None;
 
 				macro_rules! combine {
@@ -548,7 +551,8 @@ fn get_code_blocks_for_unamed_variant(
 				}
 				#(#recurse)*
 				res.unwrap_or_else(|| ui.label("Empty UnamedStruct"))
-			}).inner
+			};
+			ui.indent(id, add_content).inner
 		}
 	});
 }
