@@ -883,6 +883,7 @@ impl_mat_inspect!(add_mat4x4, Mat4x4, [[m11, m12, m13, m14], [m21, m22, m23, m24
 /// - `allow_delete`: Show button to delete entries
 /// - `editable_keys`: Allow editing the string keys
 /// - `ui`: The egui Ui context
+#[allow(clippy::too_many_arguments)]
 pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 	data: &mut std::collections::HashMap<String, T>,
 	parent_id: egui::Id,
@@ -911,7 +912,7 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 
 				let inner_res = if editable_keys {
 					ui.horizontal_top(|ui| {
-						let key_res = ui.add_enabled_ui(!read_only, |ui| {
+						ui.add_enabled_ui(!read_only, |ui| {
 							let mut te = edited_key.clone();
 							let res = ui.add_sized(
 								[ui.available_width() * label_ratio, 0.0],
@@ -935,13 +936,12 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 							}).inner;
 
 							res.union(value_res)
-						});
-						key_res
+						})
 					})
 				} else {
 					ui.horizontal_top(|ui| {
-						let key_res = ui.add_enabled_ui(!read_only, |ui| {
-							let value_res = ui.vertical(|ui| {
+						ui.add_enabled_ui(!read_only, |ui| {
+							ui.vertical(|ui| {
 								value.inspect_with_custom_id(
 									id.with(&edited_key),
 									&key,
@@ -950,11 +950,8 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 									read_only,
 									ui,
 								)
-							}).inner;
-
-							value_res
-						});
-						key_res
+							}).inner
+						})
 					})
 				};
 
@@ -985,6 +982,7 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 					data.insert(i.to_string(), T::default());
 					changed = true;
 				}
+				#[allow(clippy::collapsible_if)]
 				if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20., 20.))).clicked() {
 					if let Some(last_key) = data.keys().last().cloned() {
 						data.remove(&last_key);
@@ -1020,6 +1018,7 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 /// - `editable_keys`: Allow editing the string keys
 /// - `custom_fn`: Custom function to inspect values: `fn(value: &mut T, parent_id: Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui) -> Response`
 /// - `ui`: The egui Ui context
+#[allow(clippy::too_many_arguments)]
 pub fn add_hashmap_custom<T, F>(
 	data: &mut std::collections::HashMap<String, T>,
 	parent_id: egui::Id,
@@ -1053,7 +1052,7 @@ where
 
 				let inner_res = if editable_keys {
 					ui.horizontal_top(|ui| {
-						let key_res = ui.add_enabled_ui(!read_only, |ui| {
+						ui.add_enabled_ui(!read_only, |ui| {
 							let mut te = edited_key.clone();
 							let res = ui.add_sized(
 								[ui.available_width() * label_ratio, 0.0],
@@ -1070,15 +1069,13 @@ where
 							}).inner;
 
 							res.union(value_res)
-						});
-						key_res
+						})
 					})
 				} else {
 					ui.horizontal_top(|ui| {
-						let key_res = ui.add_enabled_ui(!read_only, |ui| {
+						ui.add_enabled_ui(!read_only, |ui| {
 							custom_fn(&mut value, id.with(&edited_key), &key, tooltip, label_ratio, read_only, ui)
-						});
-						key_res
+						})
 					})
 				};
 
@@ -1112,6 +1109,7 @@ where
 					data.insert(i.to_string(), T::default());
 					changed = true;
 				}
+				#[allow(clippy::collapsible_if)]
 				if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20., 20.))).clicked() {
 					if let Some(last_key) = data.keys().last().cloned() {
 						data.remove(&last_key);

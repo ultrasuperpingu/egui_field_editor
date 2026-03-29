@@ -254,6 +254,7 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
 					self.push(T::default());
 					changed = true;
 				}
+				#[allow(clippy::collapsible_if)]
 				if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20.,20.))).clicked() {
 					if self.pop().is_some() {
 						changed = true;
