@@ -14,18 +14,19 @@ categories = ["gui", "development-tools", "game-development"]
 all-features = true
 
 [dependencies]
-egui = ">=0.31.0"
+egui = ">=0.31, <0.34"
 egui_dnd = ">=0.13.0"
 egui_field_editor_derive = { path = "../egui_field_editor_derive" }
 nalgebra-glm = { version = ">=0.20", features = [], optional=true }
-egui_extras = { version = ">=0.32", features = ["syntect", "datepicker"], optional=true }
+egui_extras = { version = ">=0.31, <0.34", features = ["syntect", "datepicker"], optional=true }
 chrono = { version = ">=0.4", features = [], optional=true }
 rfd = { version = ">=0.13", features = [], optional=true }
 smallvec = { version = ">=0.13", features = [], optional=true }
+arrayvec = { version = ">=0.7", features = [], optional=true }
 
 [dev-dependencies]
-eframe = ">=0.31"
-egui_extras = { version = ">=0.31", features = ["syntect"] }
+eframe = ">=0.31, <0.34"
+egui_extras = { version = ">=0.31, <0.34", features = ["syntect"] }
 better_default = "1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -36,23 +37,28 @@ wasm-bindgen-futures = "0.4.50"
 
 [features]
 default = []
-all = ["nalgebra_glm", "datepicker", "filepicker", "smallvec"]
+all = ["nalgebra_glm", "datepicker", "filepicker", "smallvec", "arrayvec"]
 nalgebra_glm = ["dep:nalgebra-glm"]
 datepicker = ["dep:egui_extras", "egui_extras/datepicker", "dep:chrono"]
 filepicker = ["dep:rfd"]
 smallvec = ["dep:smallvec"]
+arrayvec = ["dep:arrayvec"]
 
 [[example]]
 name = "nalgebra_glm"
-path = "examples/nalgebra_glm.rs"
+path = "examples/nalgebra_glm_native.rs"
 required-features = ["nalgebra_glm"]
 
 [[example]]
 name = "datepicker"
-path = "examples/datepicker.rs"
+path = "examples/datepicker_native.rs"
 required-features = ["datepicker"]
 
 [[example]]
 name = "filepicker"
-path = "examples/filepicker.rs"
+path = "examples/filepicker_native.rs"
 required-features = ["filepicker"]
+
+[[example]]
+name = "hashmap"
+path = "examples/hashmap_native.rs"

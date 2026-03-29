@@ -602,3 +602,38 @@ mod smallvec {
 		}
 	}
 }
+
+
+#[cfg(feature = "arrayvec")]
+mod arrayvec {
+	use crate::EguiInspect;
+	use arrayvec::ArrayVec;
+
+	impl<T, const N: usize> EguiInspect for ArrayVec<T, N>
+	where
+		T: EguiInspect + Default,
+	{
+		fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+			let mut res = super::inspect_collection(self.as_mut_slice(), parent_id, label, tooltip, label_ratio, read_only, ui);
+			let mut changed = false;
+			ui.add_enabled_ui(!read_only, |ui| {
+				ui.horizontal_top(|ui| {
+					ui.add_space(ui.available_width() - 50.);
+					if ui.add_enabled(N > self.len(),egui::Button::new("+").min_size(egui::Vec2::new(20.,20.))).clicked() {
+						self.push(T::default());
+						changed = true;
+					}
+					if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20.,20.))).clicked() {
+						if self.pop().is_some() {
+							changed = true;
+						}
+					}
+				});
+			});
+			if changed {
+				res.mark_changed();
+			}
+			res
+		}
+	}
+}

@@ -1,12 +1,15 @@
 
-#![no_main]
-#![cfg(target_arch = "wasm32")]
+#![cfg_attr(target_arch = "wasm32", no_main)]
 
+#[cfg(target_arch = "wasm32")]
 use eframe::web_sys;
+#[cfg(target_arch = "wasm32")]
 use eframe::wasm_bindgen::JsCast;
 
+#[cfg(target_arch = "wasm32")]
 include!("shared/manual_implement.rs");
 
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn main() -> Result<(), wasm_bindgen::JsValue> {
 	let app = MyApp::default();
@@ -26,4 +29,9 @@ pub fn main() -> Result<(), wasm_bindgen::JsValue> {
 	});
 
 	Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn main() {
+	eprintln!("This example only work in wasm !!!");
 }

@@ -72,6 +72,8 @@ struct MyApp {
 	pub array: [TestData;4],
 	#[cfg(feature = "smallvec")]
 	pub smallvec_array: smallvec::SmallVec<[TestData;4]>,
+	#[cfg(feature = "arrayvec")]
+	pub array_vec: arrayvec::ArrayVec<TestData,4>,
 	pub hashmap: HashMap<String, u64>,
 	pub u8: u8,
 	#[inspect(range(min = 0., max = 12.0))]
@@ -96,6 +98,8 @@ impl Default for MyApp {
 			array: Default::default(),
 			#[cfg(feature = "smallvec")]
 			smallvec_array: smallvec::SmallVec::new(),
+			#[cfg(feature = "arrayvec")]
+			array_vec: arrayvec::ArrayVec::new(),
 			hashmap,
 			u8: Default::default(),
 			double: Default::default(),
