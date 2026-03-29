@@ -1,3 +1,7 @@
+v0.4
+ - Add hashmap, smallvec and arrayvec support
+v0.3
+ - Add label_ratio parameters to inspect functions
 v0.2.2
  - Added file picker
 v0.2.1

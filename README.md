@@ -16,7 +16,12 @@ This crate provide a `EguiInspect` trait which is necessary for a struct or enum
 types, and can be implemented for user created types with the macro `#[derive(EguiInspect)]`.
 If every underlying types implements `EguiInspect`, then you will be able to inspect it. If not, you can still be able to edit your type  by using ```hidden```, ```custom_fn``` or ```from_string``` attributes.
 
-You optionally can add the `nalgebra_glm` feature which provide implementation of `EguiInspect` for `nalgebra_glm` types and the `datapicker` feature which provide implementation of `EguiInspect` for `NaiveDate`.
+You optionally can add the following features:
+ - `nalgebra_glm`: provide implementation of `EguiInspect` for `nalgebra_glm` types
+ - `datapicker`: provide implementation of `EguiInspect` for `NaiveDate`.
+ - `filepicker`: enhance implementation of `EguiInspect` for `PathBuf` (add a file dialog).
+ - `smallvec`: provide implementation of `EguiInspect` for `SmallVec`.
+ - `arrayvec`: provide implementation of `EguiInspect` for `ArrayVec`.
 
 This is a side project, so the API might not be stable yet.
 
@@ -25,14 +30,6 @@ This is a side project, so the API might not be stable yet.
   <img src="resources/screenshot.png" alt="Animated" width="100%"/>
 </a>
 
-You can add a reference to this crate in your Cargo.toml:
-```toml
-[dependencies]
-egui_field_editor = { version = "0.2", features=["all"] }
-egui_field_editor = "0.2"
-```
-
-And then, instantiate a EguiInspector giving it a mutable reference to the object to inspect.
 
 See the following examples:
  * [simple](egui_field_editor/examples/shared/simple.rs): a simple example
@@ -43,6 +40,17 @@ See the following examples:
  * [datepicker](egui_field_editor/examples/shared/datepicker.rs): example with `NaiveDate`.
 
 # Documentation
+## Installation
+
+You can add a reference to this crate in your Cargo.toml:
+```toml
+[dependencies]
+egui_field_editor = { version = "0.4", features=["all"] }
+egui_field_editor = "0.4"
+```
+
+And then, instantiate a EguiInspector giving it a mutable reference to the object to inspect.
+
 ## Available Attributes
 This derive allows customizing how fields are displayed in a user interface (UI), typically using egui. The following attributes can be applied to struct fields or enum variants to control their behavior and appearance.
 
@@ -80,6 +88,13 @@ List of attributes:
   Force edition from string conversion (needs type to implement [`FromStr`] and [`Display`])
 - ```custom_fn```: (``String``)
   Use a custom function instead of calling [`EguiInspect::inspect_with_custom_id`]
+- ```hashmap```: (```HashmapParams```)
+    - ```allow_add_delete```: (```bool```)
+      Allow adding new entries (default: false)
+    - ```editable_keys```: (```bool```)
+	    Allow editing keys (default: false)
+    - ```custom_fn```: (optional ```String```)
+      Custom function to inspect values: fn(value: &mut T, parent_id: Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui) -> Response
 - ```file``` (```FilePickerParams```)
     - ```filter```: (```String```) : a list of file filters accepted by the file dialog
 - ```date``` (```DatePickerParams```)
