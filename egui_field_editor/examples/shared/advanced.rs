@@ -122,14 +122,14 @@ fn inspect_num(data: &mut i16, label: &str, tooltip:&str, label_ratio: f32, read
 	egui_field_editor::add_number(data, label, tooltip, label_ratio, read_only, None, ui)
 }
 impl eframe::App for MyApp {
-	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+	fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
 		let code = include_str!("advanced.rs");
-		egui::SidePanel::right("right_panel").show(ctx, |ui| {
+		egui::Panel::right("right_panel").show_inside(ui, |ui| {
 			if ui.add(EguiInspector::new(self).with_title("Inpector").label_ratio(0.3)).changed() {
 				println!("Changed!!")
 			}
 		});
-		egui::CentralPanel::default().show(ctx, |ui| {
+		egui::CentralPanel::default().show_inside(ui, |ui| {
 			egui::ScrollArea::vertical().id_salt("code_scrolling").show(ui, |ui| {
 				code_view_ui(ui, &CodeTheme::default(), code, "Rust");
 			});

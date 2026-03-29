@@ -178,12 +178,12 @@ fn custom_hashmap_editor(
 }
 
 impl eframe::App for MyApp {
-	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+	fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
 		let code = include_str!("hashmap.rs");
-		egui::SidePanel::right("right_panel")
+		egui::Panel::right("right_panel")
 			.resizable(true)
-			.default_width(400.0)
-			.show(ctx, |ui| {
+			.default_size(400.0)
+			.show_inside(ui, |ui| {
 				if ui.add(
 					EguiInspector::new(self)
 						.with_title("HashMap Showcase")
@@ -194,7 +194,7 @@ impl eframe::App for MyApp {
 					println!("Data changed!!")
 				}
 			});
-		egui::CentralPanel::default().show(ctx, |ui| {
+		egui::CentralPanel::default().show_inside(ui, |ui| {
 			egui::ScrollArea::vertical()
 				.id_salt("code_scrolling")
 				.show(ui, |ui| {

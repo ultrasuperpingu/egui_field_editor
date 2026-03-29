@@ -33,8 +33,8 @@
 //! }
 //! 
 //! impl eframe::App for MyApp {
-//!     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-//!         egui::CentralPanel::default().show(ctx, |ui| {
+//!     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+//!         egui::CentralPanel::default().show_inside(ui, |ui| {
 //!             ui.add(EguiInspector::new(self));
 //!         });
 //!     }
@@ -122,7 +122,7 @@ use nalgebra_glm::*;
 #[cfg(feature = "datepicker")]
 use std::{hash::{Hash, Hasher}, ops::RangeInclusive};
 #[cfg(feature = "datepicker")]
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 
 /// See also [EguiInspect]
 pub use egui_field_editor_derive::*;
@@ -675,11 +675,17 @@ pub fn add_date(data: &mut NaiveDate, parent_id: egui::Id, label: &str, tooltip:
 		show_icon: bool,
 		format: String,
 		highlight_weekends: bool,
-		start_end_years: Option<RangeInclusive<i32>>,
+		start_end_years: Option<RangeInclusive<i16>>,
 		ui: &mut egui::Ui) -> egui::Response {
 
 	let id = if parent_id == egui::Id::NULL { egui::Id::NULL } else { parent_id.with(label) };
-	let mut widget = egui_extras::DatePickerButton::new(data)
+	let mut jiff_date = jiff::civil::Date::new(
+		data.year() as i16,
+		data.month() as i8,
+		data.day() as i8,
+	).unwrap(); // TODO: Fix this
+
+	let mut widget = egui_extras::DatePickerButton::new(&mut jiff_date)
 		.combo_boxes(combo_boxes)
 		.arrows(arrows)
 		.calendar(calendar)
@@ -690,14 +696,22 @@ pub fn add_date(data: &mut NaiveDate, parent_id: egui::Id, label: &str, tooltip:
 	if let Some(start_end_years)=start_end_years {
 		widget = widget.start_end_years(start_end_years);
 	}
-	if id != egui::Id::NULL {
+	let res = if id != egui::Id::NULL {
 		// Ugly hack because DatePickerButton::id_salt() taking a &str
 		let mut hasher = std::hash::DefaultHasher::new();
 		id.hash(&mut hasher);
 		crate::add_widget(label, widget.id_salt(format!("{}", hasher.finish()).as_str()), tooltip, label_ratio, read_only, ui)
 	} else {
 		crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
+	};
+	if res.changed() {
+		*data = NaiveDate::from_ymd(
+			jiff_date.year() as i32,
+			jiff_date.month() as u32,
+			jiff_date.day() as u32,
+		);
 	}
+	res
 }
 
 /// Add a path (a singleline string editor) with a button next to it to open a file picker if the feature "filepicker" is active

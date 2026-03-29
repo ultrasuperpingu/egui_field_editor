@@ -556,15 +556,28 @@ mod datepicker {
 	impl EguiInspect for NaiveDate {
 		fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
 			let id = if parent_id == egui::Id::NULL { egui::Id::NULL } else { parent_id.with(label) };
-			let widget = DatePickerButton::new(self);
-			if id != egui::Id::NULL {
+			let mut jiff_date = jiff::civil::Date::new(
+				self.year() as i16,
+				self.month() as i8,
+				self.day() as i8,
+			).unwrap(); //TODO: fix this
+			let widget = DatePickerButton::new(&mut jiff_date);
+			let res = if id != egui::Id::NULL {
 				// Ugly hack because DatePickerButton::id_salt() needs a &str
 				let mut hasher = std::hash::DefaultHasher::new();
 				id.hash(&mut hasher);
 				crate::add_widget(label, widget.id_salt(format!("{}", hasher.finish()).as_str()), tooltip, label_ratio, read_only, ui)
 			} else {
 				crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
+			};
+			if res.changed() {
+				*self = NaiveDate::from_ymd(
+					jiff_date.year() as i32,
+					jiff_date.month() as u32,
+					jiff_date.day() as u32,
+				);
 			}
+			res
 		}
 	}
 }

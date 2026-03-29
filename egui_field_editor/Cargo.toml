@@ -1,6 +1,6 @@
 [package]
 name = "egui_field_editor"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 description = "Easily creating UI to edit and preview data"
 readme = "../README.md"
@@ -14,19 +14,21 @@ categories = ["gui", "development-tools", "game-development"]
 all-features = true
 
 [dependencies]
-egui = ">=0.31, <0.34"
-egui_dnd = ">=0.13.0"
+egui = ">=0.34"
+egui_dnd = ">=0.15.0"
 egui_field_editor_derive = { path = "../egui_field_editor_derive" }
+#egui_field_editor_derive = "0.5.0"
 nalgebra-glm = { version = ">=0.20", features = [], optional=true }
-egui_extras = { version = ">=0.31, <0.34", features = ["syntect", "datepicker"], optional=true }
+egui_extras = { version = ">=0.34", features = ["syntect", "datepicker"], optional=true }
 chrono = { version = ">=0.4", features = [], optional=true }
 rfd = { version = ">=0.13", features = [], optional=true }
 smallvec = { version = ">=0.13", features = [], optional=true }
 arrayvec = { version = ">=0.7", features = [], optional=true }
+jiff = { version = ">=0.2", optional=true }
 
 [dev-dependencies]
-eframe = ">=0.31, <0.34"
-egui_extras = { version = ">=0.31, <0.34", features = ["syntect"] }
+eframe = ">=0.34"
+egui_extras = { version = ">=0.34", features = ["syntect"] }
 better_default = "1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -39,7 +41,7 @@ wasm-bindgen-futures = "0.4.50"
 default = []
 all = ["nalgebra_glm", "datepicker", "filepicker", "smallvec", "arrayvec"]
 nalgebra_glm = ["dep:nalgebra-glm"]
-datepicker = ["dep:egui_extras", "egui_extras/datepicker", "dep:chrono"]
+datepicker = ["dep:egui_extras", "egui_extras/datepicker", "dep:chrono", "dep:jiff"]
 filepicker = ["dep:rfd"]
 smallvec = ["dep:smallvec"]
 arrayvec = ["dep:arrayvec"]

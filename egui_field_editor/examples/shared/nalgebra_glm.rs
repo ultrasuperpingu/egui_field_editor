@@ -250,14 +250,14 @@ struct MyApp {
 
 impl eframe::App for MyApp {
 	
-	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+	fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
 		let code = include_str!("nalgebra_glm.rs");
-		egui::SidePanel::right("right_panel").show(ctx, |ui| {
+		egui::Panel::right("right_panel").show_inside(ui, |ui| {
 			if ui.add(EguiInspector::new(self).with_title("Inpector")).changed() {
 				println!("Changed!!!")
 			}
 		});
-		egui::CentralPanel::default().show(ctx, |ui| {
+		egui::CentralPanel::default().show_inside(ui, |ui| {
 			egui::ScrollArea::vertical().id_salt("code_scrolling").show(ui, |ui| {
 				code_view_ui(ui, &CodeTheme::default(), code, "Rust");
 			});

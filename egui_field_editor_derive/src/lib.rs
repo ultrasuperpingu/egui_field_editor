@@ -37,7 +37,7 @@ struct DatePickerParams {
 	///
 	/// For example, if you want to provide the range of years from 2000 to 2035, you can use:
 	/// `start_end_years(min=2000, max=2035)`.
-	start_end_years: Option<Range<i32>>,
+	start_end_years: Option<Range<i16>>,
 }
 impl Default for DatePickerParams {
 	fn default() -> Self {
