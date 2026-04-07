@@ -549,11 +549,28 @@ mod nalgebra_ui {
 #[cfg(feature = "datepicker")]
 mod datepicker {
 	use std::hash::{Hash, Hasher};
-
+	#[cfg(feature = "chrono")]
+	use chrono::Datelike;
 	use crate::EguiInspect;
-	use chrono::prelude::*;
+	use crate::DateWrapper;
 	use egui_extras::DatePickerButton;
-	impl EguiInspect for NaiveDate {
+	impl EguiInspect for jiff::civil::Date {
+		fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+			let id = if parent_id == egui::Id::NULL { egui::Id::NULL } else { parent_id.with(label) };
+			let widget = DatePickerButton::new(self);
+			let res = if id != egui::Id::NULL {
+				// Ugly hack because DatePickerButton::id_salt() needs a &str
+				let mut hasher = std::hash::DefaultHasher::new();
+				id.hash(&mut hasher);
+				crate::add_widget(label, widget.id_salt(format!("{}", hasher.finish()).as_str()), tooltip, label_ratio, read_only, ui)
+			} else {
+				crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
+			};
+			res
+		}
+	}
+	#[cfg(feature = "chrono")]
+	impl EguiInspect for chrono::NaiveDate {
 		fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
 			let id = if parent_id == egui::Id::NULL { egui::Id::NULL } else { parent_id.with(label) };
 			let mut jiff_date = jiff::civil::Date::new(
@@ -571,13 +588,69 @@ mod datepicker {
 				crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
 			};
 			if res.changed() {
-				*self = NaiveDate::from_ymd(
+				if let Some(d) = chrono::NaiveDate::from_ymd_opt(
 					jiff_date.year() as i32,
 					jiff_date.month() as u32,
 					jiff_date.day() as u32,
-				);
+				)
+				{
+					*self = d;
+				}
 			}
 			res
+		}
+	}
+	#[cfg(feature = "time")]
+	impl EguiInspect for time::Date {
+		fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+			let id = if parent_id == egui::Id::NULL { egui::Id::NULL } else { parent_id.with(label) };
+			let mut jiff_date = jiff::civil::Date::new(
+				self.year() as i16,
+				self.month() as i8,
+				self.day() as i8,
+			).unwrap(); //TODO: fix this
+			let widget = DatePickerButton::new(&mut jiff_date);
+			let res = if id != egui::Id::NULL {
+				// Ugly hack because DatePickerButton::id_salt() needs a &str
+				let mut hasher = std::hash::DefaultHasher::new();
+				id.hash(&mut hasher);
+				crate::add_widget(label, widget.id_salt(format!("{}", hasher.finish()).as_str()), tooltip, label_ratio, read_only, ui)
+			} else {
+				crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
+			};
+			if res.changed() {
+				
+				*self = DateWrapper(jiff_date).into();
+			}
+			res
+		}
+	}
+	#[cfg(feature = "chrono")]
+	impl From<DateWrapper> for chrono::NaiveDate {
+		fn from(value: DateWrapper) -> Self {
+			//TODO: unwrap...
+			chrono::NaiveDate::from_ymd_opt(value.0.year() as i32, value.0.month() as u32, value.0.day() as u32).unwrap()
+		}
+	}
+	#[cfg(feature = "chrono")]
+	impl From<chrono::NaiveDate> for DateWrapper {
+		fn from(value: chrono::NaiveDate) -> Self {
+			//TODO: unwrap...
+			Self(jiff::civil::Date::new(value.year() as i16, value.month() as i8, value.day() as i8).unwrap())
+		}
+	}
+	#[cfg(feature = "time")]
+	impl From<DateWrapper> for time::Date {
+		fn from(value: DateWrapper) -> Self {
+			//TODO: unwrap...
+			time::Date::from_calendar_date(value.0.year() as i32, (value.0.month() as u8).try_into().unwrap(), value.0.day() as u8).unwrap()
+		}
+	}
+	#[cfg(feature = "time")]
+	impl From<time::Date> for DateWrapper {
+		fn from(value: time::Date) -> Self {
+			//TODO: unwrap...
+			Self(jiff::civil::Date::new(value.year() as i16,value.month() as i8,value.day() as i8).unwrap())
 		}
 	}
 }

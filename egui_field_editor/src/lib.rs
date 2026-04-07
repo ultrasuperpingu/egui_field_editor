@@ -103,9 +103,17 @@
 //! - `nalgebra_glm`: Enables support for inspecting nalgebra-glm types like Vec3, Vec4, etc.
 //! 
 //!   This adds a dependency to [nalgebra-glm](https://docs.rs/nalgebra-glm/latest/nalgebra_glm/index.html).
-//! - `datepicker`: Enables date picker UI using chrono and egui_extras.
-//! 
-//!   This adds a dependency to [egui_extras](https://docs.rs/egui_extras/latest/egui_extras/index.html) datepicker feature and to [chrono](https://docs.rs/chrono/latest/chrono/).
+//! - `datepicker`: Enables date picker UI using jiff and egui_extras.
+//!
+//!   This adds a dependency to [egui_extras](https://docs.rs/egui_extras/latest/egui_extras/index.html) datepicker feature and to [jiff](https://docs.rs/jiff/latest/jiff/).
+//!    This implement inspector for the [jiff::civil::Date] type.
+//!    You can optionally use features [chrono](https://docs.rs/chrono/latest/chrono/) and [time](https://docs.rs/time/latest/time/) to implement it for This implement inspector for the [time::Date] and [chrono::NaiveDate].
+//! - `filepicker`: Enables file picker UI using rfd.
+//!
+//! - `smallvec`: Enables EguiInpect implementation for [smallvec::SmallVec].
+//!
+//! - `arrayvec`: Enables EguiInpect implementation for [arrayvec::ArrayVec].
+//!
 //! - `all`: A shortcut to activate all features.
 //! 
 //! 
@@ -121,8 +129,6 @@ use egui::{Color32, Response, Ui, Widget};
 use nalgebra_glm::*;
 #[cfg(feature = "datepicker")]
 use std::{hash::{Hash, Hasher}, ops::RangeInclusive};
-#[cfg(feature = "datepicker")]
-use chrono::{Datelike, NaiveDate};
 
 /// See also [EguiInspect]
 pub use egui_field_editor_derive::*;
@@ -646,6 +652,62 @@ where T: FromStr + Display {
 	}
 	r
 }
+
+
+/// An utility wrapper around [`jiff::civil::Date`].
+///
+/// This wrapper is useful when you want to:
+/// - Implement custom traits or methods on top of `Date`
+/// - Use `Deref` to access `Date` fields directly
+/// - Maintain compatibility with `egui` while adding abstraction
+///
+/// # Trait Implementations
+///
+/// - [`Clone`], [`Copy`], [`Debug`] for ergonomic use
+/// - [`From<Date>`] and [`From<DateWrapper>`] for conversion
+/// - [`Deref`] and [`DerefMut`] to access `Color32` transparently
+///
+/// # See Also
+///
+/// - [`jiff::civil::Date`]
+#[derive(Clone, Debug, Copy)]
+#[cfg(feature = "datepicker")]
+pub struct DateWrapper(jiff::civil::Date);
+#[cfg(feature = "datepicker")]
+impl From<jiff::civil::Date> for DateWrapper {
+	fn from(value: jiff::civil::Date) -> Self {
+		Self(value)
+	}
+}
+#[cfg(feature = "datepicker")]
+impl From<DateWrapper> for jiff::civil::Date {
+	fn from(value: DateWrapper) -> Self {
+		value.0
+	}
+}
+#[cfg(feature = "datepicker")]
+impl Deref for DateWrapper {
+	type Target = jiff::civil::Date;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+#[cfg(feature = "datepicker")]
+impl DerefMut for DateWrapper {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.0
+	}
+}
+#[cfg(feature = "datepicker")]
+impl PartialEq for DateWrapper {
+	fn eq(&self, other: &Self) -> bool {
+		self.0 == other.0
+	}
+}
+#[cfg(feature = "datepicker")]
+impl Eq for DateWrapper {}
+
 /// Adds a date picker for date types.
 /// 
 /// # Parameters
@@ -667,7 +729,7 @@ where T: FromStr + Display {
 /// - [`egui_extras::DatePickerButton`]
 #[cfg(feature = "datepicker")]
 #[allow(clippy::too_many_arguments)] // TODO: find a better way to pass arguments
-pub fn add_date(data: &mut NaiveDate, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool,
+pub fn add_civil_date(data: &mut jiff::civil::Date, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool,
 		combo_boxes: bool,
 		arrows: bool,
 		calendar: bool,
@@ -679,13 +741,8 @@ pub fn add_date(data: &mut NaiveDate, parent_id: egui::Id, label: &str, tooltip:
 		ui: &mut egui::Ui) -> egui::Response {
 
 	let id = if parent_id == egui::Id::NULL { egui::Id::NULL } else { parent_id.with(label) };
-	let mut jiff_date = jiff::civil::Date::new(
-		data.year() as i16,
-		data.month() as i8,
-		data.day() as i8,
-	).unwrap(); // TODO: Fix this
 
-	let mut widget = egui_extras::DatePickerButton::new(&mut jiff_date)
+	let mut widget = egui_extras::DatePickerButton::new(data)
 		.combo_boxes(combo_boxes)
 		.arrows(arrows)
 		.calendar(calendar)
@@ -704,12 +761,49 @@ pub fn add_date(data: &mut NaiveDate, parent_id: egui::Id, label: &str, tooltip:
 	} else {
 		crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
 	};
+	res
+}
+
+/// Adds a date picker for date types.
+/// 
+/// # Parameters
+/// - `combo_boxes`: Show combo boxes in date picker popup. (Default: true)
+/// - `arrows`: Show arrows in date picker popup. (Default: true)
+/// - `calendar`: Show calendar in date picker popup. (Default: true)
+/// - `calendar_week`: Show calendar week in date picker popup. (Default: true)
+/// - `show_icon`: Show the calendar icon on the button. (Default: true)
+/// - `format`: Change the format shown on the button. (Default: `"%Y-%m-%d"`)
+/// 
+///    See [`chrono::format::strftime`] for valid formats.
+/// - `highlight_weekends`: Highlight weekend days. (Default: true)
+/// - `start_end_years`: Set the start and end years for the date picker. (Default: today's year - 100 to today's year + 10)
+/// 
+///    This will limit the years you can choose from in the dropdown to the specified range.
+/// 
+/// # See Also
+///
+/// - [`egui_extras::DatePickerButton`]
+#[cfg(feature = "datepicker")]
+#[allow(clippy::too_many_arguments)] // TODO: find a better way to pass arguments
+pub fn add_date<T>(data: &mut T, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool,
+		combo_boxes: bool,
+		arrows: bool,
+		calendar: bool,
+		calendar_week: bool,
+		show_icon: bool,
+		format: String,
+		highlight_weekends: bool,
+		start_end_years: Option<RangeInclusive<i16>>,
+		ui: &mut egui::Ui) -> egui::Response
+where
+	DateWrapper: From<T>,
+	T : From<DateWrapper>,
+	T : Clone
+{
+	let mut date: DateWrapper = data.clone().into();
+	let res=add_civil_date(&mut date, parent_id, label, tooltip, label_ratio, read_only, combo_boxes, arrows, calendar, calendar_week, show_icon, format, highlight_weekends, start_end_years, ui);
 	if res.changed() {
-		*data = NaiveDate::from_ymd(
-			jiff_date.year() as i32,
-			jiff_date.month() as u32,
-			jiff_date.day() as u32,
-		);
+		*data = date.into();
 	}
 	res
 }
