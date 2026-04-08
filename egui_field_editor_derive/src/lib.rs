@@ -159,14 +159,19 @@ pub fn derive_egui_field_editor(input: proc_macro::TokenStream) -> proc_macro::T
 	let generics = add_trait_bounds(input.generics);
 	let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-	let inspect_code = get_code_for_data(&input.data, &name);
+	let mut inspect_code = get_code_for_data(&input.data, &name);
+	if !inspect_code.is_empty() {
+		inspect_code = quote! {let resp=#inspect_code;}
+	} else {
+		inspect_code = quote! {let resp=ui.response();}
+	}
 
 	let expanded = quote! {
 		impl #impl_generics egui_field_editor::EguiInspect for #name #ty_generics #where_clause {
 			fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
 				let id = if _parent_id == egui::Id::NULL { ui.next_auto_id() } else { _parent_id.with(label) };
 				let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
-				let resp=#inspect_code;
+				#inspect_code
 				#exec_code
 				resp
 			}

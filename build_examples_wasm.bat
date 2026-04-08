@@ -14,3 +14,5 @@ rem cargo build --target wasm32-unknown-unknown --example filepicker_web --relea
 rem wasm-bindgen target/wasm32-unknown-unknown/release/examples/filepicker_web.wasm --out-dir docs/filepicker --target web
 cargo build --target wasm32-unknown-unknown --example hashmap_web --release
 wasm-bindgen target/wasm32-unknown-unknown/release/examples/hashmap_web.wasm --out-dir docs/hashmap --target web
+
+pause

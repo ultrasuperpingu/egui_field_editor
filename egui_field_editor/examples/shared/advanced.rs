@@ -85,6 +85,8 @@ struct MyApp {
 	#[inspect(from_string)]
 	pub ipv4: Ipv4Addr
 }
+#[derive(EguiInspect)]
+pub struct Empty;
 impl Default for MyApp {
 	fn default() -> Self {
 		let mut hashmap = HashMap::new();
