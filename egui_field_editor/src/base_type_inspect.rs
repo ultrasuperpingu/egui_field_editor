@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, RwLock};
-use egui::{Color32, Ui};
+use egui::{Color32, Stroke, Ui};
 use crate::EguiInspect;
 
 macro_rules! impl_inspect_number {
@@ -290,6 +290,14 @@ impl<T: crate::EguiInspect + Default + Clone> crate::EguiInspect for HashMap<Str
 impl crate::EguiInspect for Color32 {
 	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
 		crate::add_color(self, label, tooltip, label_ratio, read_only, ui)
+	}
+}
+
+impl crate::EguiInspect for Stroke {
+	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+		let resp = crate::add_color(&mut self.color, label, tooltip, label_ratio, read_only, ui);
+		let resp2 = crate::add_number(&mut self.width, label, tooltip, label_ratio, read_only, Some((0.0, 100.0)), ui);
+		resp.union(resp2)
 	}
 }
 
