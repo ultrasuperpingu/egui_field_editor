@@ -132,14 +132,12 @@ use std::{hash::{Hash, Hasher}, ops::RangeInclusive};
 
 /// See also [EguiInspect]
 pub use egui_field_editor_derive::*;
-/// A function to format label
-pub type LabelFormater = Box<dyn Fn(&str) -> String>;
 
 /// A wrapper widget that renders an object implementing [`EguiInspect`] inside an `egui` UI.
 ///
 /// This struct provides a convenient way to embed an inspector view for any type that
 /// implements the [`EguiInspect`] trait. It supports toggling read-only mode and integrates
-/// seamlessly with `egui`'s layout system.
+/// seamlessly with `egui`'s layout system. It provide a separator in the header allowing to change the label size.
 ///
 /// # Type Parameters
 ///
@@ -166,26 +164,25 @@ pub type LabelFormater = Box<dyn Fn(&str) -> String>;
 ///
 /// - [`EguiInspect`]
 /// - [`egui::Widget`]
-pub struct EguiInspector<'a, T : EguiInspect> {
+pub struct EguiInspector<'a, T : EguiInspect + ?Sized> {
 	obj: &'a mut T,
 	title: Option<String>,
 	read_only: bool,
 	id_salt: Option<egui::Id>,
 	label_ratio: f32,
-	label_formatter: Option<LabelFormater>,
 }
-impl<'a, T : EguiInspect> EguiInspector<'a, T> {
+impl<'a, T : EguiInspect + ?Sized> EguiInspector<'a, T> {
 	/// Creates a new inspector widget for the given object.
 	///
 	/// - `obj`: The object to inspect.
 	pub fn new(obj: &'a mut T) -> Self {
-		Self { obj, title: None, read_only: false, id_salt: None, label_ratio: 0.2, label_formatter: None }
+		Self { obj, title: None, read_only: false, id_salt: None, label_ratio: 0.3 }
 	}
 	/// Creates a new read only inspector widget for the given object.
 	///
 	/// - `obj`: The object to inspect.
 	pub fn new_read_only(obj: &'a mut T) -> Self {
-		Self { obj, title: None, read_only: true, id_salt: None, label_ratio: 0.2, label_formatter: None }
+		Self { obj, title: None, read_only: true, id_salt: None, label_ratio: 0.3 }
 	}
 	/// Set read-only mode.
 	#[inline]
@@ -211,26 +208,101 @@ impl<'a, T : EguiInspect> EguiInspector<'a, T> {
 		self.label_ratio = size;
 		self
 	}
-	/// - Set a function to format the label
-	pub fn label_formatter(mut self, label_formatter: Box<dyn Fn(&str) -> String>) -> Self {
-		self.label_formatter = Some(label_formatter);
-		self
-	}
 }
 
-impl<'a, T : EguiInspect> Widget for EguiInspector<'a, T> {
+impl<'a, T: EguiInspect + ?Sized> Widget for EguiInspector<'a, T> {
 	fn ui(self, ui: &mut Ui) -> Response {
 		ui.set_min_width(100.);
-		let available_width = ui.available_width();
+		let id = self.id_salt.unwrap_or(ui.next_auto_id());
+
+		//let mut y_offset=0.0;
 		if let Some(title) = &self.title {
+			//y_offset = ui.heading(title).rect.height();
 			ui.heading(title);
 		}
-		egui::ScrollArea::vertical().show(ui, |ui| {
+
+		let mut label_ratio = ui.ctx().data_mut(|data| {
+			data.get_persisted::<f32>(id).unwrap_or(0.3)
+		});
+
+		/*let available_width = ui.available_width();
+		
+		let splitter_width = 4.0;
+		let splitter_resp = ui.allocate_rect(
+			egui::Rect::from_min_size(
+				ui.min_rect().min + egui::vec2(label_ratio * available_width, y_offset),
+				egui::vec2(splitter_width, 10.0),
+			),
+			egui::Sense::click_and_drag(),
+		);
+		
+		let splitter_rect = splitter_resp.rect;
+		let response: Option<Response> = ui.ctx().read_response(id);
+		let state = response.map(|r| r.widget_state()).unwrap_or_default();
+		let egui::widget_style::SeparatorStyle {
+			spacing: _spacing_style,
+			stroke,
+		} = ui.style().separator_style(state);
+		let grow = 2.0;
+		ui.painter().vline(
+				splitter_rect.center().x,
+				(splitter_rect.top() - grow)..=(splitter_rect.bottom() + grow),
+				stroke,
+			);
+
+		let splitter_resp = ui.interact(splitter_rect, ui.id().with("splitter"), egui::Sense::drag());
+		if splitter_resp.hovered() || splitter_resp.dragged() {
+			ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+		}
+		if splitter_resp.dragged() {
+			let delta = ui.input(|i| i.pointer.delta().x);
+			label_ratio = (label_ratio + delta / available_width).clamp(0.1, 0.8);
+			ui.ctx().data_mut(|data| data.insert_persisted(id, label_ratio));
+		}*/
+		let splitter_width = 4.0;
+		let available_width = ui.available_width();
+		let splitter_x = label_ratio * available_width;
+
+		let splitter_rect = egui::Rect::from_min_size(
+			ui.min_rect().min + egui::vec2(splitter_x, 0.0),
+			//egui::vec2(splitter_width, 20.0),
+			egui::vec2(splitter_width, ui.available_height()),
+		);
+
+		let splitter_resp = ui.interact(splitter_rect, ui.id().with("splitter"), egui::Sense::drag());
+
+		let response: Option<Response> = ui.ctx().read_response(id);
+		let state = response.map(|r| r.widget_state()).unwrap_or_default();
+		let stroke = ui.style().separator_style(state).stroke;
+		ui.painter().vline(
+			splitter_rect.center().x,
+			splitter_rect.top()..=splitter_rect.top()+20.0,
+			stroke,
+		);
+		if splitter_resp.hovered() || splitter_resp.dragged() {
+			ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+		}
+		if splitter_resp.dragged() {
+			let delta = ui.input(|i| i.pointer.delta().x);
+			label_ratio = (label_ratio + delta / available_width).clamp(0.1, 0.8);
+			ui.ctx().data_mut(|data| data.insert_persisted(id, label_ratio));
+		}
+
+
+		egui::ScrollArea::vertical().id_salt(id.with("scroll")).show(ui, |ui| {
 			ui.set_min_width(available_width);
+
 			if let Some(salt) = self.id_salt {
-				self.obj.inspect_with_custom_id(salt, "", "", self.label_ratio, self.read_only, ui)
+				self.obj.inspect_with_custom_id(
+					salt,
+					"",
+					"",
+					label_ratio,
+					self.read_only,
+					ui,
+				)
 			} else {
-				self.obj.inspect("", "", self.label_ratio, self.read_only, ui)
+				self.obj.inspect("", "", label_ratio, self.read_only, ui)
 			}
 		}).inner
 	}
@@ -434,27 +506,52 @@ where
 
 	let inner_res = ui.horizontal_top(|ui| {
 		let inner_enabled_res = ui.add_enabled_ui(!read_only, |ui| {
-			let mut label_res = ui.add_sized(
+			/*let mut label_res = ui.add_sized(
 				[label_width, 0.0],
 				egui::Label::new(label)
 					.truncate()
 					.show_tooltip_when_elided(true)
 					.halign(egui::Align::LEFT),
 			);
-
 			if !tooltip.is_empty() {
 				if !read_only {
 					label_res=label_res.on_hover_text(tooltip);
 				} else {
 					label_res=label_res.on_disabled_hover_text(tooltip);
 				}
+			}*/
+			let (rect, _label_res) = ui.allocate_exact_size(
+				egui::vec2(label_width, ui.spacing().interact_size.y),
+				egui::Sense::hover(),
+			);
+
+			let mut child_ui = ui.new_child(egui::UiBuilder::new()
+				.max_rect(rect)
+				.layout(egui::Layout::left_to_right(egui::Align::Min))
+
+			);
+
+			let mut label_res = child_ui.add(
+				egui::Label::new(label)
+					.truncate()
+					.show_tooltip_when_elided(true)
+					.halign(egui::Align::LEFT));
+
+			if !tooltip.is_empty() {
+				if !read_only {
+					label_res = label_res.on_hover_text(tooltip);
+				} else {
+					label_res = label_res.on_disabled_hover_text(tooltip);
+				}
 			}
 
 			let widget_res = field_renderer(ui, field_width);
 			label_res.union(widget_res)
+
 		});
 		inner_enabled_res.inner
 	});
+	
 	inner_res.inner
 }
 
@@ -490,7 +587,7 @@ where
 pub fn add_number_slider<Num: egui::emath::Numeric>(data: &mut Num, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, min:Num, max: Num, ui: &mut egui::Ui) -> egui::Response {
 	let editor=egui::Slider::new(data, min..=max);
 	crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, field_width| {
-		ui.spacing_mut().slider_width = field_width-50.; 
+		ui.spacing_mut().slider_width = field_width-50.;
 		ui.add_sized([field_width, 0.], editor)
 	})
 }
@@ -857,14 +954,14 @@ pub fn add_path(data: &mut std::path::PathBuf, label: &str, tooltip: &str, label
 ///
 /// # Trait Implementations
 ///
-/// - [`Clone`], [`Copy`], [`Debug`] for ergonomic use
+/// - [`Clone`], [`Copy`], [`Default`], [`Debug`] for ergonomic use
 /// - [`From<Color32>`] and [`From<Color32Wrapper>`] for conversion
 /// - [`Deref`] and [`DerefMut`] to access `Color32` transparently
 ///
 /// # See Also
 ///
 /// - [`egui::Color32`]
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Color32Wrapper(egui::Color32);
 impl From<Color32> for Color32Wrapper {
 	fn from(value: Color32) -> Self {

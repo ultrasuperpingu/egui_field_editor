@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, RwLock};
-use egui::{Color32, Stroke, Ui};
+use egui::{Color32, Stroke, StrokeKind, Ui};
 use crate::EguiInspect;
 
 macro_rules! impl_inspect_number {
@@ -294,10 +294,49 @@ impl crate::EguiInspect for Color32 {
 }
 
 impl crate::EguiInspect for Stroke {
+	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+		let mut add_content = |ui: &mut Ui|{
+			let resp = crate::add_color(&mut self.color, "Color", tooltip, label_ratio, read_only, ui);
+			let resp2 = crate::add_number(&mut self.width, "Width", tooltip, label_ratio, read_only, Some((0.0, 100.0)), ui);
+			resp.union(resp2)
+		};
+		if label.is_empty() {
+			add_content(ui)
+		} else {
+			let label_res = ui.add(
+				egui::Label::new(label)
+					.truncate()
+					.show_tooltip_when_elided(true)
+					.halign(egui::Align::LEFT));
+			if !tooltip.is_empty() {
+				if !read_only {
+					label_res.on_hover_text(tooltip);
+				} else {
+					label_res.on_disabled_hover_text(tooltip);
+				}
+			}
+			ui.indent(parent_id, add_content).inner
+		}
+	}
+}
+
+impl crate::EguiInspect for StrokeKind {
 	fn inspect_with_custom_id(&mut self, _parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
-		let resp = crate::add_color(&mut self.color, label, tooltip, label_ratio, read_only, ui);
-		let resp2 = crate::add_number(&mut self.width, label, tooltip, label_ratio, read_only, Some((0.0, 100.0)), ui);
-		resp.union(resp2)
+		let mut current_index = match self {
+			StrokeKind::Inside => 0,
+			StrokeKind::Middle => 1,
+			StrokeKind::Outside => 2,
+		};
+		let resp=crate::add_combobox(&mut current_index, label, tooltip, label_ratio, read_only, &["Inside".to_owned(), "Middle".to_owned(), "Outside".to_owned()], ui);
+		if resp.changed() {
+			match current_index {
+				0 => *self=StrokeKind::Inside,
+				1 => *self=StrokeKind::Middle,
+				2 => *self=StrokeKind::Outside,
+				_ => unreachable!(),
+			}
+		}
+		resp
 	}
 }
 
@@ -322,13 +361,22 @@ impl<T : EguiInspect> crate::EguiInspect for Option<T>
 		let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
 
 		let mut main_res =ui.horizontal(|ui| {
-			let mut label_res = ui.add_sized(
-				[label_width, 0.0],
+			let (rect, _label_res) = ui.allocate_exact_size(
+				egui::vec2(label_width, ui.spacing().interact_size.y),
+				egui::Sense::hover(),
+			);
+
+			let mut child_ui = ui.new_child(egui::UiBuilder::new()
+				.max_rect(rect)
+				.layout(egui::Layout::left_to_right(egui::Align::Min))
+
+			);
+
+			let mut label_res = child_ui.add(
 				egui::Label::new(label)
 					.truncate()
 					.show_tooltip_when_elided(true)
-					.halign(egui::Align::LEFT),
-			);
+					.halign(egui::Align::LEFT));
 
 			if !tooltip.is_empty() {
 				label_res=label_res.on_hover_text(tooltip).on_disabled_hover_text(tooltip);

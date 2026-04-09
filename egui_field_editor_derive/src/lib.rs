@@ -322,7 +322,7 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 			let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
 
 			let combo_resp = ui.horizontal(|ui| {
-				let r = ui.add_sized(
+				/*let r = ui.add_sized(
 					[label_width, 0.0],
 					egui::Label::new(label)
 						.truncate()
@@ -332,6 +332,30 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 
 				if !tooltip.is_empty() {
 					r.on_hover_text(tooltip).on_disabled_hover_text(tooltip);
+				}*/
+				let (rect, _label_res) = ui.allocate_exact_size(
+					egui::vec2(label_width, ui.spacing().interact_size.y),
+					egui::Sense::hover(),
+				);
+
+				let mut child_ui = ui.new_child(egui::UiBuilder::new()
+					.max_rect(rect)
+					.layout(egui::Layout::left_to_right(egui::Align::Min))
+
+				);
+
+				let label_res = child_ui.add(
+					egui::Label::new(label)
+						.truncate()
+						.show_tooltip_when_elided(true)
+						.halign(egui::Align::LEFT));
+
+				if !tooltip.is_empty() {
+					if !read_only {
+						label_res.on_hover_text(tooltip);
+					} else {
+						label_res.on_disabled_hover_text(tooltip);
+					}
 				}
 				let mut changed = false;
 				ui.add_enabled_ui(!read_only, |ui| {
