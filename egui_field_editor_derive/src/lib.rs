@@ -1,8 +1,9 @@
-#![forbid(unsafe_code)] 
+#![forbid(unsafe_code)]
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-	parse_macro_input, parse_quote, spanned::Spanned, Data, DataEnum, DataStruct, DeriveInput, Fields, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Index, LitStr, Meta
+	Data, DataEnum, DataStruct, DeriveInput, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
+	Generics, Index, LitStr, Meta, parse_macro_input, parse_quote, spanned::Spanned,
 };
 
 use darling::{FromDeriveInput, FromField, FromMeta, FromVariant};
@@ -12,7 +13,7 @@ mod utils;
 #[derive(Debug, FromMeta)]
 struct FilePathParams {
 	#[darling(multiple, default)]
-	pub filter: Vec<String>
+	pub filter: Vec<String>,
 }
 #[derive(Debug, FromMeta)]
 #[darling(default)]
@@ -41,11 +42,20 @@ struct DatePickerParams {
 }
 impl Default for DatePickerParams {
 	fn default() -> Self {
-		Self { combo_boxes: true, arrows: true, calendar: true, calendar_week: true, show_icon: true, format: "%Y-%m-%d".to_owned(), highlight_weekends: true, start_end_years: Default::default() }
+		Self {
+			combo_boxes: true,
+			arrows: true,
+			calendar: true,
+			calendar_week: true,
+			show_icon: true,
+			format: "%Y-%m-%d".to_owned(),
+			highlight_weekends: true,
+			start_end_years: Default::default(),
+		}
 	}
 }
 #[derive(Debug, Clone, FromMeta)]
-struct Range<T : Default> {
+struct Range<T: Default> {
 	#[darling(default)]
 	min: T,
 	#[darling(default)]
@@ -66,9 +76,11 @@ impl FromMeta for Multiline {
 				if list.tokens.is_empty() {
 					Ok(Multiline(Some(4)))
 				} else {
-					let lit: syn::LitInt = syn::parse2(list.tokens.clone())
-						.map_err(|e| darling::Error::custom(format!("Failed to parse list tokens: {e}")))?;
-					let value = lit.base10_parse::<u8>()
+					let lit: syn::LitInt = syn::parse2(list.tokens.clone()).map_err(|e| {
+						darling::Error::custom(format!("Failed to parse list tokens: {e}"))
+					})?;
+					let value = lit
+						.base10_parse::<u8>()
 						.map_err(|e| darling::Error::custom(format!("Invalid u8 value: {e}")))?;
 					Ok(Multiline(Some(value)))
 				}
@@ -79,7 +91,7 @@ impl FromMeta for Multiline {
 #[derive(Debug, FromMeta)]
 struct ExecuteBtn {
 	fn_name: LitStr,
-	#[darling(default="bool_true")]
+	#[darling(default = "bool_true")]
 	is_method: bool,
 	label: Option<LitStr>,
 	tooltip: Option<LitStr>,
@@ -102,7 +114,7 @@ struct HashMapOptions {
 struct ObjectAttributeArgs {
 	#[darling(multiple)]
 	execute_btn: Vec<ExecuteBtn>,
-	label_formatter: Option<syn::Expr>
+	label_formatter: Option<syn::Expr>,
 }
 #[derive(Debug, FromField, FromVariant, Default)]
 #[darling(attributes(inspect), default)]
@@ -140,19 +152,17 @@ struct AttributeArgs {
 #[proc_macro_derive(EguiInspect, attributes(inspect))]
 pub fn derive_egui_field_editor(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
-	let attrs= match ObjectAttributeArgs::from_derive_input(&input) {
-			Ok(_attrs) => {
-				_attrs
-			}
-			Err(e) => {
-				let msg = e.to_string();
-				return proc_macro::TokenStream::from(quote_spanned! {
-					e.span() => {
-						compile_error!(#msg);
-					}
-				});
-			}
-		};
+	let attrs = match ObjectAttributeArgs::from_derive_input(&input) {
+		Ok(_attrs) => _attrs,
+		Err(e) => {
+			let msg = e.to_string();
+			return proc_macro::TokenStream::from(quote_spanned! {
+				e.span() => {
+					compile_error!(#msg);
+				}
+			});
+		}
+	};
 	let exec_code = get_code_execute_btns(&attrs.execute_btn);
 	let name = input.ident;
 
@@ -202,7 +212,7 @@ fn get_code_execute_btns(execs: &[ExecuteBtn]) -> TokenStream {
 			Ok(f) => f,
 			Err(e) => {
 				let msg = e.to_string();
-				return quote_spanned! {e.span() => {compile_error!{#msg}}}
+				return quote_spanned! {e.span() => {compile_error!{#msg}}};
 			}
 		};
 		let mut tooltip_string = String::new();
@@ -233,11 +243,11 @@ fn get_code_for_data(data: &Data, struct_name: &Ident) -> TokenStream {
 	}
 }
 
-fn get_code_for_struct(data: &DataStruct)  -> TokenStream {
+fn get_code_for_struct(data: &DataStruct) -> TokenStream {
 	match data.fields {
 		Fields::Named(ref fields) => get_code_for_struct_named_fields(fields),
 		Fields::Unnamed(ref fields) => get_code_for_struct_unnamed_fields(fields),
-		Fields::Unit => quote! {}
+		Fields::Unit => quote! {},
 	}
 }
 /// Generate the code to edit an enum (the content of the ```inspect_with_custom_id``` method)
@@ -250,10 +260,8 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 	for variant in &data_enum.variants {
 		let variant_name = &variant.ident;
 		let mut label = variant_name.to_string();
-		let attrs= match AttributeArgs::from_variant(variant) {
-			Ok(_attr) => {
-				_attr
-			}
+		let attrs = match AttributeArgs::from_variant(variant) {
+			Ok(_attr) => _attr,
 			Err(e) => {
 				let msg = e.to_string();
 				return quote_spanned! {
@@ -275,10 +283,10 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 			Fields::Unit => get_code_blocks_for_unit_variant(
 				enum_name,
 				variant_name,
-				label, 
+				label,
 				&mut variant_texts,
 				&mut variant_select_conditions,
-				&mut variant_content_edit
+				&mut variant_content_edit,
 			),
 			Fields::Unnamed(fields) => get_code_blocks_for_unamed_variant(
 				enum_name,
@@ -288,7 +296,7 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 				attrs.read_only,
 				&mut variant_texts,
 				&mut variant_select_conditions,
-				&mut variant_content_edit
+				&mut variant_content_edit,
 			),
 			Fields::Named(fields) => get_code_blocks_for_named_variant(
 				enum_name,
@@ -298,14 +306,13 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 				attrs.read_only,
 				&mut variant_texts,
 				&mut variant_select_conditions,
-				&mut variant_content_edit
-			)
-
+				&mut variant_content_edit,
+			),
 		}
 	}
-	
+
 	if has_hidden {
-		variant_texts.push(quote!{_ => { "" }});
+		variant_texts.push(quote! {_ => { "" }});
 		variant_content_edit.push(quote! {_ => { ui.response() } });
 	}
 
@@ -317,22 +324,11 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 			//TODO: find a way to use it (if only Unit variants) or don't declare it if not needed
 			#[allow(unused_variables)]
 			let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
-			let available_width = ui.available_width();
+			/*let available_width = ui.available_width();
 			let label_width = available_width * label_ratio;
 			let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
 
 			let combo_resp = ui.horizontal(|ui| {
-				/*let r = ui.add_sized(
-					[label_width, 0.0],
-					egui::Label::new(label)
-						.truncate()
-						.show_tooltip_when_elided(true)
-						.halign(egui::Align::LEFT),
-				);
-
-				if !tooltip.is_empty() {
-					r.on_hover_text(tooltip).on_disabled_hover_text(tooltip);
-				}*/
 				let (rect, _label_res) = ui.allocate_exact_size(
 					egui::vec2(label_width, ui.spacing().interact_size.y),
 					egui::Sense::hover(),
@@ -377,7 +373,37 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 			let content_resp = match self {
 				#(#variant_content_edit)*
 			};
-			content_resp.union(combo_resp)
+			content_resp.union(combo_resp)*/
+			let selected_text = match self {
+				#(#variant_texts)*
+			};
+			let main_res = egui_field_editor::collapsing_enum_variant_editor::CollapsingEnumVariantEditor::new(
+				label,
+				tooltip,
+				label_ratio,
+			)
+			.default_open(true)
+			.show(
+				ui,
+				self,
+				selected_text,
+				|ui: &mut egui::Ui, _edit_obj| {
+					let mut changed = false;
+					let mut resp = ui.response();
+					#(#variant_select_conditions)*;
+					if changed {
+						resp.mark_changed();
+					}
+					resp
+				},
+				|ui, edit_obj| match edit_obj {
+					#(#variant_content_edit)*
+				},
+				true,
+			);
+			main_res
+				.combo_response
+				.union(main_res.body_response.unwrap_or(ui.response()))
 		}
 	}
 }
@@ -385,9 +411,7 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 fn get_code_for_struct_named_fields(fields: &FieldsNamed) -> TokenStream {
 	let recurse = fields.named.iter().map(|f| {
 		let attrs = match AttributeArgs::from_field(f) {
-			Ok(_attrs) => {
-				_attrs
-			}
+			Ok(_attrs) => _attrs,
 			Err(e) => {
 				let msg = e.to_string();
 				return quote_spanned! { e.span() => {
@@ -401,7 +425,7 @@ fn get_code_for_struct_named_fields(fields: &FieldsNamed) -> TokenStream {
 		}
 		let name = &f.ident;
 
-		utils::get_function_call(quote!{&mut self.#name}, f, &attrs, "".into())
+		utils::get_function_call(quote! {&mut self.#name}, f, &attrs, "".into())
 	});
 	quote_spanned! {
 		fields.span() => {
@@ -433,11 +457,9 @@ fn get_code_for_struct_named_fields(fields: &FieldsNamed) -> TokenStream {
 /// Generate the code to edit an unnamed struct (the content of the ```inspect_with_custom_id``` method)
 fn get_code_for_struct_unnamed_fields(fields: &FieldsUnnamed) -> TokenStream {
 	let mut recurse = Vec::new();
-	for (i,f) in fields.unnamed.iter().enumerate() {
+	for (i, f) in fields.unnamed.iter().enumerate() {
 		let attrs = match AttributeArgs::from_field(f) {
-			Ok(_attrs) => {
-				_attrs
-			}
+			Ok(_attrs) => _attrs,
 			Err(e) => {
 				let msg = e.to_string();
 				return quote_spanned! { e.span() => {
@@ -450,8 +472,13 @@ fn get_code_for_struct_unnamed_fields(fields: &FieldsUnnamed) -> TokenStream {
 			continue;
 		}
 		let tuple_index = Index::from(i);
-		recurse.push(utils::get_function_call(quote!{&mut self.#tuple_index}, f, &attrs, format!("Field {i}")))
-	};
+		recurse.push(utils::get_function_call(
+			quote! {&mut self.#tuple_index},
+			f,
+			&attrs,
+			format!("Field {i}"),
+		))
+	}
 
 	let result = quote_spanned! {
 		fields.span() => {
@@ -483,23 +510,23 @@ fn get_code_for_struct_unnamed_fields(fields: &FieldsUnnamed) -> TokenStream {
 }
 /// Fill the ```variant_texts```, ```variant_select_conditions``` and ```variant_content_edit``` code blocks for a unit variant
 fn get_code_blocks_for_unit_variant(
-		enum_name: &Ident,
-		variant_name: &Ident,
-		label:String,
-		variant_texts:&mut Vec<TokenStream>,
-		variant_select_conditions:&mut Vec<TokenStream>,
-		variant_content_edit:&mut Vec<TokenStream>) {
+	enum_name: &Ident,
+	variant_name: &Ident,
+	label: String,
+	variant_texts: &mut Vec<TokenStream>,
+	variant_select_conditions: &mut Vec<TokenStream>,
+	variant_content_edit: &mut Vec<TokenStream>,
+) {
 	variant_texts.push(quote! {
 		#enum_name::#variant_name => #label,
 	});
 
 	variant_select_conditions.push(quote! {
-		if ui.selectable_value(self, #enum_name::#variant_name, #label).changed() {
-			*self = #enum_name::#variant_name;
+		if ui.selectable_value(_edit_obj, #enum_name::#variant_name, #label).changed() {
+			*_edit_obj = #enum_name::#variant_name;
 			changed=true;
 		}
 	});
-
 
 	variant_content_edit.push(quote! {
 		#enum_name::#variant_name => {
@@ -513,40 +540,38 @@ fn get_code_blocks_for_unit_variant(
 fn get_code_blocks_for_unamed_variant(
 	enum_name: &Ident,
 	variant_name: &Ident,
-	label:String,
-	fields : &FieldsUnnamed,
+	label: String,
+	fields: &FieldsUnnamed,
 	read_only: bool,
-	variant_texts:&mut Vec<TokenStream>,
-	variant_select_conditions:&mut Vec<TokenStream>,
-	variant_content_edit:&mut Vec<TokenStream>) {
-
+	variant_texts: &mut Vec<TokenStream>,
+	variant_select_conditions: &mut Vec<TokenStream>,
+	variant_content_edit: &mut Vec<TokenStream>,
+) {
 	let default_value = if fields.unnamed.len() == 1 {
 		quote! { Default::default() }
 	} else {
 		let defaults = std::iter::repeat_n(quote! { Default::default() }, fields.unnamed.len());
 		quote! {  #(#defaults),*  }
 	};
-	let bindings_ignore = (0..fields.unnamed.len())
-		.map(|_i| Ident::new("_", proc_macro2::Span::call_site()));
+	let bindings_ignore =
+		(0..fields.unnamed.len()).map(|_i| Ident::new("_", proc_macro2::Span::call_site()));
 	variant_texts.push(quote! {
 		#enum_name::#variant_name(#(#bindings_ignore),*) => #label,
 	});
-	
+
 	variant_select_conditions.push(quote! {
-		if ui.selectable_value(self, #enum_name::#variant_name(#default_value), #label).changed() {
-			*self = #enum_name::#variant_name(#default_value);
+		if ui.selectable_value(_edit_obj, #enum_name::#variant_name(#default_value), #label).changed() {
+			*_edit_obj = #enum_name::#variant_name(#default_value);
 			changed=true;
 		}
 	});
 	let mut fieldnames_list = vec![];
 	let bindings = (0..fields.unnamed.len())
 		.map(|i| Ident::new(&format!("field{i}"), proc_macro2::Span::call_site()));
-	
+
 	let recurse = fields.unnamed.iter().enumerate().map(|(i, f)| {
 		let mut attrs = match AttributeArgs::from_field(f) {
-			Ok(_attrs) => {
-				_attrs
-			}
+			Ok(_attrs) => _attrs,
 			Err(e) => {
 				let msg = e.to_string();
 				return quote_spanned! { e.span() => {
@@ -562,9 +587,9 @@ fn get_code_blocks_for_unamed_variant(
 
 		let fieldname = format!("field{i}");
 		let fieldname = Ident::new(&fieldname, proc_macro2::Span::call_site());
-		fieldnames_list.push(quote!{#fieldname});
+		fieldnames_list.push(quote! {#fieldname});
 
-		utils::get_function_call(quote!{#fieldname}, f, &attrs, format!("Field {i}"))
+		utils::get_function_call(quote! {#fieldname}, f, &attrs, format!("Field {i}"))
 	});
 	let bindings_for_match = bindings.clone();
 	variant_content_edit.push(quote! {
@@ -588,37 +613,43 @@ fn get_code_blocks_for_unamed_variant(
 /// Fill the ```variant_texts```, ```variant_select_conditions``` and ```variant_content_edit``` code blocks for a named fields variant
 #[allow(clippy::too_many_arguments)]
 fn get_code_blocks_for_named_variant(
-		enum_name: &Ident,
-		variant_name: &Ident,
-		label:String,
-		fields : &FieldsNamed,
-		read_only: bool,
-		variant_texts:&mut Vec<TokenStream>,
-		variant_select_conditions:&mut Vec<TokenStream>,
-		variant_content_edit:&mut Vec<TokenStream>) {
-
+	enum_name: &Ident,
+	variant_name: &Ident,
+	label: String,
+	fields: &FieldsNamed,
+	read_only: bool,
+	variant_texts: &mut Vec<TokenStream>,
+	variant_select_conditions: &mut Vec<TokenStream>,
+	variant_content_edit: &mut Vec<TokenStream>,
+) {
 	let mut field_bindings = Vec::new();
 	let mut inspect_calls = Vec::new();
-	
-	let bindings_ignore: Vec<TokenStream> = fields.named.iter()
+
+	let bindings_ignore: Vec<TokenStream> = fields
+		.named
+		.iter()
 		.map(|f| {
 			let name = f.ident.clone();
-			quote!{#name : _ }
-		}
-	).collect();
+			quote! {#name : _ }
+		})
+		.collect();
 	variant_texts.push(quote! {
 		#enum_name::#variant_name{#(#bindings_ignore),*} => #label,
 	});
-	
-	let defaults = fields.named.iter().map(|field| {
-		let name = field.ident.as_ref().unwrap(); // safety: fields is NamedFields
-		Some(quote! { #name: Default::default() })
-	}).collect::<Vec<_>>();
+
+	let defaults = fields
+		.named
+		.iter()
+		.map(|field| {
+			let name = field.ident.as_ref().unwrap(); // safety: fields is NamedFields
+			Some(quote! { #name: Default::default() })
+		})
+		.collect::<Vec<_>>();
 	let default_value = quote! {  #(#defaults),* };
 
 	variant_select_conditions.push(quote! {
-		if ui.selectable_value(self, #enum_name::#variant_name{#default_value}, #label).changed() {
-			*self = #enum_name::#variant_name { #default_value };
+		if ui.selectable_value(_edit_obj, #enum_name::#variant_name{#default_value}, #label).changed() {
+			*_edit_obj = #enum_name::#variant_name { #default_value };
 			changed=true;
 		}
 	});
@@ -630,10 +661,15 @@ fn get_code_blocks_for_named_variant(
 			Ok(mut attrs) => {
 				if !attrs.hidden {
 					attrs.read_only = attrs.read_only || read_only;
-					inspect_calls.push(utils::get_function_call(quote!{#fieldname}, f, &attrs, "".into()));
+					inspect_calls.push(utils::get_function_call(
+						quote! {#fieldname},
+						f,
+						&attrs,
+						"".into(),
+					));
 				}
 				hidden = attrs.hidden;
-			},
+			}
 			Err(e) => {
 				let msg = e.to_string();
 				inspect_calls.push(quote_spanned! { e.span() => {
@@ -643,15 +679,15 @@ fn get_code_blocks_for_named_variant(
 			}
 		}
 		if !hidden {
-			field_bindings.push(quote!{#fieldname});
+			field_bindings.push(quote! {#fieldname});
 		} else {
-			field_bindings.push(quote!{#fieldname: _});
+			field_bindings.push(quote! {#fieldname: _});
 		}
 	}
 
 	variant_content_edit.push(quote! {
 		#enum_name::#variant_name { #( #field_bindings ),* } => {
-			ui.indent(id, |ui| {
+			//ui.indent(id, |ui| {
 				let mut res: Option<egui::Response> = None;
 
 				macro_rules! combine {
@@ -662,7 +698,7 @@ fn get_code_blocks_for_named_variant(
 				}
 				#( #inspect_calls )*
 				res.unwrap_or_else(|| ui.label("Empty UnamedStruct"))
-			}).inner
+			//}).inner
 		}
 	});
 }

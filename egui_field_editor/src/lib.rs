@@ -1,7 +1,7 @@
 #![warn(missing_docs)]
-//#![deny(rustdoc::broken_intra_doc_links)]
+#![warn(rustdoc::broken_intra_doc_links)]
 #![warn(rustdoc::invalid_html_tags)]
-#![forbid(unsafe_code)] 
+#![forbid(unsafe_code)]
 #![allow(clippy::needless_doctest_main)]
 
 //! This crate expose macros and traits to generate boilerplate code
@@ -11,7 +11,7 @@
 //! ```
 //! use egui_field_editor::{EguiInspect, EguiInspector};
 //! use eframe::egui;
-//! 
+//!
 //! #[derive(EguiInspect, Default)]
 //! struct MyApp {
 //!     #[inspect(read_only)]
@@ -31,7 +31,7 @@
 //!     #[inspect(name = "A proper field name")]
 //!     ugly_internal_field_name: u16,
 //! }
-//! 
+//!
 //! impl eframe::App for MyApp {
 //!     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
 //!         egui::CentralPanel::default().show_inside(ui, |ui| {
@@ -39,10 +39,10 @@
 //!         });
 //!     }
 //! }
-//! 
+//!
 //! fn main() {
 //!     let options = eframe::NativeOptions::default();
-//!     let _ = eframe::run_native("EGui Inspector Very Simple Example", options, 
+//!     let _ = eframe::run_native("EGui Inspector Very Simple Example", options,
 //!         Box::new(|_cc|
 //!             Ok(Box::new(MyApp {
 //!                 raw_string:"A raw string which is not editable, even is read_only=false",
@@ -55,7 +55,7 @@
 //! ```
 //!
 //! You can add attributes to structures field.
-//! 
+//!
 //! Currently supported attributes are defined in the struct AttributeArgs of egui_field_editor_derive
 //!
 //! Here is a list of supported attributes:
@@ -85,29 +85,29 @@
 //!     Show the calendar icon on the button. (Default: true).
 //!   - ```format```: *```String```*
 //!     Change the format shown on the button. (Default: ```"%Y-%m-%d"```).
-//! 
+//!
 //!     See [`chrono::format::strftime`] for valid formats.
-//! 
+//!
 //!   - ```highlight_weekends```: (optional ```bool```).
 //!     Highlight weekend days. (Default: true)
 //!   - ```start_end_years```: (min = ```String```|```i32```, max = ```String```|```i32```):
-//! 
+//!
 //!     Set the start and end years for the date picker. (Default: today's year - 100 to today's year + 10)
-//! 
+//!
 //!     This will limit the years you can choose from in the dropdown to the specified range.
-//! 
+//!
 //!     For example, if you want to provide the range of years from 2000 to 2035, you can use: `start_end_years(min=2000, max=2035)`.
 //!
 //! # Feature Flags
-//! This crate provides optional features to extend functionality with external libraries. You can enable them selectively to reduce compile time and dependency footprint.
+//! This crate provides optional features to extend functionality with external libraries. You can enable them ²ively to reduce compile time and dependency footprint.
 //! - `nalgebra_glm`: Enables support for inspecting nalgebra-glm types like Vec3, Vec4, etc.
-//! 
+//!
 //!   This adds a dependency to [nalgebra-glm](https://docs.rs/nalgebra-glm/latest/nalgebra_glm/index.html).
 //! - `datepicker`: Enables date picker UI using jiff and egui_extras.
 //!
 //!   This adds a dependency to [egui_extras](https://docs.rs/egui_extras/latest/egui_extras/index.html) datepicker feature and to [jiff](https://docs.rs/jiff/latest/jiff/).
-//!    This implement inspector for the [jiff::civil::Date] type.
-//!    You can optionally use features [chrono](https://docs.rs/chrono/latest/chrono/) and [time](https://docs.rs/time/latest/time/) to implement it for This implement inspector for the [time::Date] and [chrono::NaiveDate].
+//!   This implement inspector for the [jiff::civil::Date] type.
+//!   You can optionally use features [chrono](https://docs.rs/chrono/latest/chrono/) and [time](https://docs.rs/time/latest/time/) to implement it for This implement inspector for the [time::Date] and [chrono::NaiveDate].
 //! - `filepicker`: Enables file picker UI using rfd.
 //!
 //! - `smallvec`: Enables EguiInpect implementation for [smallvec::SmallVec].
@@ -115,20 +115,27 @@
 //! - `arrayvec`: Enables EguiInpect implementation for [arrayvec::ArrayVec].
 //!
 //! - `all`: A shortcut to activate all features.
-//! 
-//! 
+//!
+//!
 //! ##  Default Features
 //! No features are activated by default.
 //! ```toml
 //! default = []
 //! ```
 
-use std::{fmt::Display, ops::{Deref, DerefMut}, str::FromStr};
 use egui::{Color32, Response, Ui, Widget};
 #[cfg(feature = "nalgebra_glm")]
 use nalgebra_glm::*;
+use std::{
+	fmt::Display,
+	ops::{Deref, DerefMut},
+	str::FromStr,
+};
 #[cfg(feature = "datepicker")]
-use std::{hash::{Hash, Hasher}, ops::RangeInclusive};
+use std::{
+	hash::{Hash, Hasher},
+	ops::RangeInclusive,
+};
 
 /// See also [EguiInspect]
 pub use egui_field_editor_derive::*;
@@ -164,25 +171,37 @@ pub use egui_field_editor_derive::*;
 ///
 /// - [`EguiInspect`]
 /// - [`egui::Widget`]
-pub struct EguiInspector<'a, T : EguiInspect + ?Sized> {
+pub struct EguiInspector<'a, T: EguiInspect + ?Sized> {
 	obj: &'a mut T,
 	title: Option<String>,
 	read_only: bool,
 	id_salt: Option<egui::Id>,
 	label_ratio: f32,
 }
-impl<'a, T : EguiInspect + ?Sized> EguiInspector<'a, T> {
+impl<'a, T: EguiInspect + ?Sized> EguiInspector<'a, T> {
 	/// Creates a new inspector widget for the given object.
 	///
 	/// - `obj`: The object to inspect.
 	pub fn new(obj: &'a mut T) -> Self {
-		Self { obj, title: None, read_only: false, id_salt: None, label_ratio: 0.3 }
+		Self {
+			obj,
+			title: None,
+			read_only: false,
+			id_salt: None,
+			label_ratio: 0.3,
+		}
 	}
 	/// Creates a new read only inspector widget for the given object.
 	///
 	/// - `obj`: The object to inspect.
 	pub fn new_read_only(obj: &'a mut T) -> Self {
-		Self { obj, title: None, read_only: true, id_salt: None, label_ratio: 0.3 }
+		Self {
+			obj,
+			title: None,
+			read_only: true,
+			id_salt: None,
+			label_ratio: 0.3,
+		}
 	}
 	/// Set read-only mode.
 	#[inline]
@@ -215,68 +234,32 @@ impl<'a, T: EguiInspect + ?Sized> Widget for EguiInspector<'a, T> {
 		ui.set_min_width(100.);
 		let id = self.id_salt.unwrap_or(ui.next_auto_id());
 
-		//let mut y_offset=0.0;
 		if let Some(title) = &self.title {
-			//y_offset = ui.heading(title).rect.height();
 			ui.heading(title);
 		}
 
-		let mut label_ratio = ui.ctx().data_mut(|data| {
-			data.get_persisted::<f32>(id).unwrap_or(0.3)
-		});
+		let mut label_ratio = ui
+			.ctx()
+			.data_mut(|data| data.get_persisted::<f32>(id).unwrap_or(0.3));
 
-		/*let available_width = ui.available_width();
-		
-		let splitter_width = 4.0;
-		let splitter_resp = ui.allocate_rect(
-			egui::Rect::from_min_size(
-				ui.min_rect().min + egui::vec2(label_ratio * available_width, y_offset),
-				egui::vec2(splitter_width, 10.0),
-			),
-			egui::Sense::click_and_drag(),
-		);
-		
-		let splitter_rect = splitter_resp.rect;
-		let response: Option<Response> = ui.ctx().read_response(id);
-		let state = response.map(|r| r.widget_state()).unwrap_or_default();
-		let egui::widget_style::SeparatorStyle {
-			spacing: _spacing_style,
-			stroke,
-		} = ui.style().separator_style(state);
-		let grow = 2.0;
-		ui.painter().vline(
-				splitter_rect.center().x,
-				(splitter_rect.top() - grow)..=(splitter_rect.bottom() + grow),
-				stroke,
-			);
-
-		let splitter_resp = ui.interact(splitter_rect, ui.id().with("splitter"), egui::Sense::drag());
-		if splitter_resp.hovered() || splitter_resp.dragged() {
-			ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
-		}
-		if splitter_resp.dragged() {
-			let delta = ui.input(|i| i.pointer.delta().x);
-			label_ratio = (label_ratio + delta / available_width).clamp(0.1, 0.8);
-			ui.ctx().data_mut(|data| data.insert_persisted(id, label_ratio));
-		}*/
 		let splitter_width = 4.0;
 		let available_width = ui.available_width();
 		let splitter_x = label_ratio * available_width;
 
 		let splitter_rect = egui::Rect::from_min_size(
 			ui.min_rect().min + egui::vec2(splitter_x, 0.0),
-			//egui::vec2(splitter_width, 20.0),
 			egui::vec2(splitter_width, ui.available_height()),
 		);
 
-		let splitter_resp = ui.interact(splitter_rect, ui.id().with("splitter"), egui::Sense::drag());
+		let splitter_resp =
+			ui.interact(splitter_rect, ui.id().with("splitter"), egui::Sense::drag());
 
 		let response: Option<Response> = ui.ctx().read_response(id);
 		let state = response.map(|r| r.widget_state()).unwrap_or_default();
 		let stroke = ui.style().separator_style(state).stroke;
 		ui.painter().vline(
 			splitter_rect.center().x,
-			splitter_rect.top()..=splitter_rect.top()+20.0,
+			splitter_rect.top()..=splitter_rect.top() + 20.0,
 			stroke,
 		);
 		if splitter_resp.hovered() || splitter_resp.dragged() {
@@ -285,26 +268,23 @@ impl<'a, T: EguiInspect + ?Sized> Widget for EguiInspector<'a, T> {
 		if splitter_resp.dragged() {
 			let delta = ui.input(|i| i.pointer.delta().x);
 			label_ratio = (label_ratio + delta / available_width).clamp(0.1, 0.8);
-			ui.ctx().data_mut(|data| data.insert_persisted(id, label_ratio));
+			ui.ctx()
+				.data_mut(|data| data.insert_persisted(id, label_ratio));
 		}
 
+		egui::ScrollArea::vertical()
+			.id_salt(id.with("scroll"))
+			.show(ui, |ui| {
+				ui.set_min_width(available_width);
 
-		egui::ScrollArea::vertical().id_salt(id.with("scroll")).show(ui, |ui| {
-			ui.set_min_width(available_width);
-
-			if let Some(salt) = self.id_salt {
-				self.obj.inspect_with_custom_id(
-					salt,
-					"",
-					"",
-					label_ratio,
-					self.read_only,
-					ui,
-				)
-			} else {
-				self.obj.inspect("", "", label_ratio, self.read_only, ui)
-			}
-		}).inner
+				if let Some(salt) = self.id_salt {
+					self.obj
+						.inspect_with_custom_id(salt, "", "", label_ratio, self.read_only, ui)
+				} else {
+					self.obj.inspect("", "", label_ratio, self.read_only, ui)
+				}
+			})
+			.inner
 	}
 }
 
@@ -444,43 +424,71 @@ pub trait EguiInspect {
 	/// - `tooltip`: Tooltip shown when hovering over the label.
 	/// - `read_only`: If `true`, disables all interactive widgets.
 	/// - `ui`: The `egui::Ui` to render into.
-	fn inspect(&mut self, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+	fn inspect(
+		&mut self,
+		label: &str,
+		tooltip: &str,
+		label_ratio: f32,
+		read_only: bool,
+		ui: &mut egui::Ui,
+	) -> egui::Response {
 		self.inspect_with_custom_id(egui::Id::NULL, label, tooltip, label_ratio, read_only, ui)
 	}
 	/// Renders the inspector UI with a custom parent ID.
 	///
 	/// This allows you to scope widget IDs under a specific parent, useful for avoiding collisions.
-	fn inspect_with_custom_id(&mut self, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui)-> egui::Response;
-
+	fn inspect_with_custom_id(
+		&mut self,
+		parent_id: egui::Id,
+		label: &str,
+		tooltip: &str,
+		label_ratio: f32,
+		read_only: bool,
+		ui: &mut egui::Ui,
+	) -> egui::Response;
 }
 
 /// Adds a labeled widget to the UI with layout and tooltip support.
 ///
 /// If `read_only` is set to `true`, the slider will be disabled and the value cannot be changed.
 /// A tooltip will be shown when the user hovers over the label.
-/// 
+///
 /// - `label`: Label shown to the left of the widget.
 /// - `widget`: The widget to render.
 /// - `tooltip`: Tooltip shown when hovering over the label.
 /// - `label_ratio`: The width percent for the label.
 /// - `read_only`: If `true`, disables the widget.
 /// - `ui`: The `egui::Ui` to render into.
-/// 
+///
 /// # See Also
 ///
 /// - [`egui::Widget`]
 /// - [add_custom_ui]
-pub fn add_widget<T: egui::Widget>(label: &str, widget: T, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
-	crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, field_width| {
-			ui.spacing_mut().slider_width = field_width-50.; 
+pub fn add_widget<T: egui::Widget>(
+	label: &str,
+	widget: T,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	ui: &mut egui::Ui,
+) -> egui::Response {
+	crate::add_custom_ui(
+		label,
+		tooltip,
+		label_ratio,
+		read_only,
+		ui,
+		|ui, field_width| {
+			ui.spacing_mut().slider_width = field_width - 50.;
 			ui.add_sized([field_width, 0.], widget)
-	})
+		},
+	)
 }
 /// Adds a custom field with layout and tooltip support.
 ///
 /// If `read_only` is set to `true`, the slider will be disabled and the value cannot be changed.
 /// A tooltip will be shown when the user hovers over the label.
-/// 
+///
 /// - `label`: Label shown to the left of the field.
 /// - `tooltip`: Tooltip shown when hovering over the label.
 /// - `label_ratio`: The width percent for the label.
@@ -502,40 +510,27 @@ where
 
 	let available_width = ui.available_width();
 	let label_width = available_width * label_ratio;
-	let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
+	let field_width = 100.0f32.max(available_width * (1.0 - label_ratio) - 10.0);
 
 	let inner_res = ui.horizontal_top(|ui| {
 		let inner_enabled_res = ui.add_enabled_ui(!read_only, |ui| {
-			/*let mut label_res = ui.add_sized(
-				[label_width, 0.0],
-				egui::Label::new(label)
-					.truncate()
-					.show_tooltip_when_elided(true)
-					.halign(egui::Align::LEFT),
-			);
-			if !tooltip.is_empty() {
-				if !read_only {
-					label_res=label_res.on_hover_text(tooltip);
-				} else {
-					label_res=label_res.on_disabled_hover_text(tooltip);
-				}
-			}*/
 			let (rect, _label_res) = ui.allocate_exact_size(
 				egui::vec2(label_width, ui.spacing().interact_size.y),
 				egui::Sense::hover(),
 			);
 
-			let mut child_ui = ui.new_child(egui::UiBuilder::new()
-				.max_rect(rect)
-				.layout(egui::Layout::left_to_right(egui::Align::Min))
-
+			let mut child_ui = ui.new_child(
+				egui::UiBuilder::new()
+					.max_rect(rect)
+					.layout(egui::Layout::left_to_right(egui::Align::Min)),
 			);
 
 			let mut label_res = child_ui.add(
 				egui::Label::new(label)
 					.truncate()
 					.show_tooltip_when_elided(true)
-					.halign(egui::Align::LEFT));
+					.halign(egui::Align::LEFT),
+			);
 
 			if !tooltip.is_empty() {
 				if !read_only {
@@ -547,11 +542,10 @@ where
 
 			let widget_res = field_renderer(ui, field_width);
 			label_res.union(widget_res)
-
 		});
 		inner_enabled_res.inner
 	});
-	
+
 	inner_res.inner
 }
 
@@ -563,7 +557,7 @@ where
 ///
 /// If `read_only` is set to `true`, the slider will be disabled and the value cannot be changed.
 /// A tooltip will be shown when the user hovers over the label.
-/// 
+///
 /// # Type Parameters
 ///
 /// - `Num`: A numeric type that implements [`egui::emath::Numeric`].
@@ -584,12 +578,28 @@ where
 /// - [`egui::Slider`]
 /// - [`add_number`]
 #[allow(clippy::too_many_arguments)]
-pub fn add_number_slider<Num: egui::emath::Numeric>(data: &mut Num, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, min:Num, max: Num, ui: &mut egui::Ui) -> egui::Response {
-	let editor=egui::Slider::new(data, min..=max);
-	crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, field_width| {
-		ui.spacing_mut().slider_width = field_width-50.;
-		ui.add_sized([field_width, 0.], editor)
-	})
+pub fn add_number_slider<Num: egui::emath::Numeric>(
+	data: &mut Num,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	min: Num,
+	max: Num,
+	ui: &mut egui::Ui,
+) -> egui::Response {
+	let editor = egui::Slider::new(data, min..=max);
+	crate::add_custom_ui(
+		label,
+		tooltip,
+		label_ratio,
+		read_only,
+		ui,
+		|ui, field_width| {
+			ui.spacing_mut().slider_width = field_width - 50.;
+			ui.add_sized([field_width, 0.], editor)
+		},
+	)
 }
 /// Adds a numeric drag field to the UI.
 ///
@@ -600,15 +610,23 @@ pub fn add_number_slider<Num: egui::emath::Numeric>(data: &mut Num, label: &str,
 /// - `read_only`: If `true`, disables interaction.
 /// - `minmax`: Optional `(min, max)` range.
 /// - `ui`: The `egui::Ui` to render into.
-/// 
+///
 /// See full documentation in [`add_number_slider`].
-/// 
+///
 /// # See Also
 ///
 /// - [`egui::DragValue`]
 /// - [`add_number`]
-pub fn add_number<Num: egui::emath::Numeric>(data: &mut Num, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, minmax: Option<(Num, Num)>, ui: &mut egui::Ui) -> egui::Response {
-	let mut editor=egui::DragValue::new(data);
+pub fn add_number<Num: egui::emath::Numeric>(
+	data: &mut Num,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	minmax: Option<(Num, Num)>,
+	ui: &mut egui::Ui,
+) -> egui::Response {
+	let mut editor = egui::DragValue::new(data);
 	if let Some(minmax) = minmax {
 		editor = editor.range(minmax.0..=minmax.1);
 	}
@@ -616,38 +634,88 @@ pub fn add_number<Num: egui::emath::Numeric>(data: &mut Num, label: &str, toolti
 }
 
 /// Adds a single-line text field.
-/// 
+///
 /// # See Also
 ///
 /// - [`egui::TextEdit::singleline`]
-pub fn add_string_singleline(data: &mut dyn egui::TextBuffer, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
-	crate::add_widget(label, egui::TextEdit::singleline(data), tooltip, label_ratio, read_only, ui)
+pub fn add_string_singleline(
+	data: &mut dyn egui::TextBuffer,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	ui: &mut egui::Ui,
+) -> egui::Response {
+	crate::add_widget(
+		label,
+		egui::TextEdit::singleline(data),
+		tooltip,
+		label_ratio,
+		read_only,
+		ui,
+	)
 }
 
 /// Adds a multi-line text field with a specified number of visible lines.
-/// 
+///
 /// # See Also
 ///
 /// - [`egui::TextEdit::multiline`]
-pub fn add_string_multiline(data: &mut dyn egui::TextBuffer, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, nb_lines: u8, ui: &mut egui::Ui) -> egui::Response {
-	crate::add_widget(label, egui::TextEdit::multiline(data).desired_rows(nb_lines as usize), tooltip, label_ratio, read_only, ui)
+pub fn add_string_multiline(
+	data: &mut dyn egui::TextBuffer,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	nb_lines: u8,
+	ui: &mut egui::Ui,
+) -> egui::Response {
+	crate::add_widget(
+		label,
+		egui::TextEdit::multiline(data).desired_rows(nb_lines as usize),
+		tooltip,
+		label_ratio,
+		read_only,
+		ui,
+	)
 }
 
 /// Adds a boolean checkbox.
-/// 
+///
 /// # See Also
 ///
 /// - [`egui::Checkbox`]
-pub fn add_bool(data: &mut bool, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
-	crate::add_widget(label, egui::Checkbox::new(data, ""), tooltip, label_ratio, read_only, ui)
+pub fn add_bool(
+	data: &mut bool,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	ui: &mut egui::Ui,
+) -> egui::Response {
+	crate::add_widget(
+		label,
+		egui::Checkbox::new(data, ""),
+		tooltip,
+		label_ratio,
+		read_only,
+		ui,
+	)
 }
 
 /// Adds a color picker for [`egui::Color32`].
-/// 
+///
 /// # See Also
 ///
 /// - [`egui::Ui::color_edit_button_srgba`]
-pub fn add_color32(data: &mut egui::Color32, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response {
+pub fn add_color32(
+	data: &mut egui::Color32,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	ui: &mut egui::Ui,
+) -> egui::Response {
 	let label_ratio = label_ratio.clamp(0.05, 0.95);
 
 	let available_width = ui.available_width();
@@ -655,7 +723,13 @@ pub fn add_color32(data: &mut egui::Color32, label: &str, tooltip: &str, label_r
 	//let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
 	ui.horizontal(|ui| {
 		ui.add_enabled_ui(!read_only, |ui| {
-			let r=ui.add_sized([label_width,0.],egui::Label::new(label).truncate().show_tooltip_when_elided(true).halign(egui::Align::LEFT));
+			let r = ui.add_sized(
+				[label_width, 0.],
+				egui::Label::new(label)
+					.truncate()
+					.show_tooltip_when_elided(true)
+					.halign(egui::Align::LEFT),
+			);
 			if !tooltip.is_empty() {
 				if !read_only {
 					r.on_hover_text(tooltip);
@@ -665,68 +739,126 @@ pub fn add_color32(data: &mut egui::Color32, label: &str, tooltip: &str, label_r
 			}
 		});
 		ui.color_edit_button_srgba(data)
-	}).inner
+	})
+	.inner
 }
 
 /// Adds a color picker for custom color types convertible to/from [`Color32Wrapper`].
-/// 
+///
 /// # See Also
 ///
 /// - [`egui::Ui::color_edit_button_srgba`]
-pub fn add_color<T>(data: &mut T, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut egui::Ui) -> egui::Response
+pub fn add_color<T>(
+	data: &mut T,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	ui: &mut egui::Ui,
+) -> egui::Response
 where
 	Color32Wrapper: From<T>,
-	T : From<Color32Wrapper>,
-	T : Clone {
-	
-	crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, _field_width| {
-		let mut color: Color32Wrapper = data.clone().into();
-		let res=ui.color_edit_button_srgba(&mut color);
-		if res.changed() {
-			*data = color.into();
-		}
-		res
-	})
+	T: From<Color32Wrapper>,
+	T: Clone,
+{
+	crate::add_custom_ui(
+		label,
+		tooltip,
+		label_ratio,
+		read_only,
+		ui,
+		|ui, _field_width| {
+			let mut color: Color32Wrapper = data.clone().into();
+			let res = ui.color_edit_button_srgba(&mut color);
+			if res.changed() {
+				*data = color.into();
+			}
+			res
+		},
+	)
 }
 
 /// Adds a [egui::ComboBox] to modify the index of chosed in the `choices` array.
-/// 
+///
 /// # Panics
 /// When `current_index` is out of bounds of `choices`.
-/// 
+///
 /// # See Also
 ///
 /// - [egui::ComboBox]
-pub fn add_combobox(current_index: &mut usize, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, choices: &[String],ui: &mut egui::Ui) -> egui::Response {
+pub fn add_combobox(
+	current_index: &mut usize,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	choices: &[String],
+	ui: &mut egui::Ui,
+) -> egui::Response {
 	//TODO: good management of id_salt
-	crate::add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, field_width| {
-		egui::ComboBox::from_id_salt(label).width(field_width).show_index(ui, current_index, choices.len(), |i| {&choices[i]})
-	})
+	crate::add_custom_ui(
+		label,
+		tooltip,
+		label_ratio,
+		read_only,
+		ui,
+		|ui, field_width| {
+			egui::ComboBox::from_id_salt(label)
+				.width(field_width)
+				.show_index(ui, current_index, choices.len(), |i| &choices[i])
+		},
+	)
 }
 /// Add a [egui::Button]
-pub fn add_button<F>(label: &str, tooltip: &str, read_only: bool, ui: &mut egui::Ui, on_click: F) -> egui::Response
-where F: FnOnce(&mut egui::Ui) {
-	let button = egui::Button::new(label).min_size(egui::vec2(ui.available_width(),0.));
+pub fn add_button<F>(
+	label: &str,
+	tooltip: &str,
+	read_only: bool,
+	ui: &mut egui::Ui,
+	on_click: F,
+) -> egui::Response
+where
+	F: FnOnce(&mut egui::Ui),
+{
+	let button = egui::Button::new(label).min_size(egui::vec2(ui.available_width(), 0.));
 	ui.add_enabled_ui(!read_only, |ui| {
 		ui.horizontal_top(|ui| {
-			let mut r= button.ui(ui);
+			let mut r = button.ui(ui);
 			if !tooltip.is_empty() {
-				r=r.on_hover_text(tooltip);
+				r = r.on_hover_text(tooltip);
 			}
 			if r.clicked() {
 				on_click(ui);
 				r.mark_changed();
 			}
 			r
-		}).inner
-	}).inner
+		})
+		.inner
+	})
+	.inner
 }
-/// Add a single line text field which use string conversions to edit. 
-pub fn add_string_convertible<T>(value: &mut T, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui) -> egui::Response
-where T: FromStr + Display {
+/// Add a single line text field which use string conversions to edit.
+pub fn add_string_convertible<T>(
+	value: &mut T,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	ui: &mut Ui,
+) -> egui::Response
+where
+	T: FromStr + Display,
+{
 	let mut buffer = value.to_string();
 
-	let r=buffer.inspect_with_custom_id(ui.next_auto_id().with(label), label, tooltip, label_ratio, read_only, ui);
+	let r = buffer.inspect_with_custom_id(
+		ui.next_auto_id().with(label),
+		label,
+		tooltip,
+		label_ratio,
+		read_only,
+		ui,
+	);
 
 	if let Ok(parsed) = T::from_str(&buffer) {
 		*value = parsed;
@@ -735,12 +867,21 @@ where T: FromStr + Display {
 	}
 	r
 }
-/// Add a multiline line text field which use string conversions to edit. 
-pub fn add_string_convertible_multiline<T>(value: &mut T, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, ui: &mut Ui) -> egui::Response
-where T: FromStr + Display {
+/// Add a multiline line text field which use string conversions to edit.
+pub fn add_string_convertible_multiline<T>(
+	value: &mut T,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	ui: &mut Ui,
+) -> egui::Response
+where
+	T: FromStr + Display,
+{
 	let mut buffer = value.to_string();
 
-	let r=crate::add_string_multiline(&mut buffer, label, tooltip, label_ratio, read_only, 4, ui);
+	let r = crate::add_string_multiline(&mut buffer, label, tooltip, label_ratio, read_only, 4, ui);
 
 	if let Ok(parsed) = T::from_str(&buffer) {
 		*value = parsed;
@@ -749,7 +890,6 @@ where T: FromStr + Display {
 	}
 	r
 }
-
 
 /// An utility wrapper around [`jiff::civil::Date`].
 ///
@@ -806,7 +946,7 @@ impl PartialEq for DateWrapper {
 impl Eq for DateWrapper {}
 
 /// Adds a date picker for date types.
-/// 
+///
 /// # Parameters
 /// - `combo_boxes`: Show combo boxes in date picker popup. (Default: true)
 /// - `arrows`: Show arrows in date picker popup. (Default: true)
@@ -814,30 +954,40 @@ impl Eq for DateWrapper {}
 /// - `calendar_week`: Show calendar week in date picker popup. (Default: true)
 /// - `show_icon`: Show the calendar icon on the button. (Default: true)
 /// - `format`: Change the format shown on the button. (Default: `"%Y-%m-%d"`)
-/// 
+///
 ///    See [`chrono::format::strftime`] for valid formats.
 /// - `highlight_weekends`: Highlight weekend days. (Default: true)
 /// - `start_end_years`: Set the start and end years for the date picker. (Default: today's year - 100 to today's year + 10)
-/// 
+///
 ///    This will limit the years you can choose from in the dropdown to the specified range.
-/// 
+///
 /// # See Also
 ///
 /// - [`egui_extras::DatePickerButton`]
 #[cfg(feature = "datepicker")]
 #[allow(clippy::too_many_arguments)] // TODO: find a better way to pass arguments
-pub fn add_civil_date(data: &mut jiff::civil::Date, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool,
-		combo_boxes: bool,
-		arrows: bool,
-		calendar: bool,
-		calendar_week: bool,
-		show_icon: bool,
-		format: String,
-		highlight_weekends: bool,
-		start_end_years: Option<RangeInclusive<i16>>,
-		ui: &mut egui::Ui) -> egui::Response {
-
-	let id = if parent_id == egui::Id::NULL { egui::Id::NULL } else { parent_id.with(label) };
+pub fn add_civil_date(
+	data: &mut jiff::civil::Date,
+	parent_id: egui::Id,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	combo_boxes: bool,
+	arrows: bool,
+	calendar: bool,
+	calendar_week: bool,
+	show_icon: bool,
+	format: String,
+	highlight_weekends: bool,
+	start_end_years: Option<RangeInclusive<i16>>,
+	ui: &mut egui::Ui,
+) -> egui::Response {
+	let id = if parent_id == egui::Id::NULL {
+		egui::Id::NULL
+	} else {
+		parent_id.with(label)
+	};
 
 	let mut widget = egui_extras::DatePickerButton::new(data)
 		.combo_boxes(combo_boxes)
@@ -847,14 +997,21 @@ pub fn add_civil_date(data: &mut jiff::civil::Date, parent_id: egui::Id, label: 
 		.show_icon(show_icon)
 		.format(format)
 		.highlight_weekends(highlight_weekends);
-	if let Some(start_end_years)=start_end_years {
+	if let Some(start_end_years) = start_end_years {
 		widget = widget.start_end_years(start_end_years);
 	}
 	let res = if id != egui::Id::NULL {
 		// Ugly hack because DatePickerButton::id_salt() taking a &str
 		let mut hasher = std::hash::DefaultHasher::new();
 		id.hash(&mut hasher);
-		crate::add_widget(label, widget.id_salt(format!("{}", hasher.finish()).as_str()), tooltip, label_ratio, read_only, ui)
+		crate::add_widget(
+			label,
+			widget.id_salt(format!("{}", hasher.finish()).as_str()),
+			tooltip,
+			label_ratio,
+			read_only,
+			ui,
+		)
 	} else {
 		crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
 	};
@@ -862,7 +1019,7 @@ pub fn add_civil_date(data: &mut jiff::civil::Date, parent_id: egui::Id, label: 
 }
 
 /// Adds a date picker for date types.
-/// 
+///
 /// # Parameters
 /// - `combo_boxes`: Show combo boxes in date picker popup. (Default: true)
 /// - `arrows`: Show arrows in date picker popup. (Default: true)
@@ -870,35 +1027,58 @@ pub fn add_civil_date(data: &mut jiff::civil::Date, parent_id: egui::Id, label: 
 /// - `calendar_week`: Show calendar week in date picker popup. (Default: true)
 /// - `show_icon`: Show the calendar icon on the button. (Default: true)
 /// - `format`: Change the format shown on the button. (Default: `"%Y-%m-%d"`)
-/// 
+///
 ///    See [`chrono::format::strftime`] for valid formats.
 /// - `highlight_weekends`: Highlight weekend days. (Default: true)
 /// - `start_end_years`: Set the start and end years for the date picker. (Default: today's year - 100 to today's year + 10)
-/// 
+///
 ///    This will limit the years you can choose from in the dropdown to the specified range.
-/// 
+///
 /// # See Also
 ///
 /// - [`egui_extras::DatePickerButton`]
 #[cfg(feature = "datepicker")]
 #[allow(clippy::too_many_arguments)] // TODO: find a better way to pass arguments
-pub fn add_date<T>(data: &mut T, parent_id: egui::Id, label: &str, tooltip: &str, label_ratio: f32, read_only: bool,
-		combo_boxes: bool,
-		arrows: bool,
-		calendar: bool,
-		calendar_week: bool,
-		show_icon: bool,
-		format: String,
-		highlight_weekends: bool,
-		start_end_years: Option<RangeInclusive<i16>>,
-		ui: &mut egui::Ui) -> egui::Response
+pub fn add_date<T>(
+	data: &mut T,
+	parent_id: egui::Id,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	combo_boxes: bool,
+	arrows: bool,
+	calendar: bool,
+	calendar_week: bool,
+	show_icon: bool,
+	format: String,
+	highlight_weekends: bool,
+	start_end_years: Option<RangeInclusive<i16>>,
+	ui: &mut egui::Ui,
+) -> egui::Response
 where
 	DateWrapper: From<T>,
-	T : From<DateWrapper>,
-	T : Clone
+	T: From<DateWrapper>,
+	T: Clone,
 {
 	let mut date: DateWrapper = data.clone().into();
-	let res=add_civil_date(&mut date, parent_id, label, tooltip, label_ratio, read_only, combo_boxes, arrows, calendar, calendar_week, show_icon, format, highlight_weekends, start_end_years, ui);
+	let res = add_civil_date(
+		&mut date,
+		parent_id,
+		label,
+		tooltip,
+		label_ratio,
+		read_only,
+		combo_boxes,
+		arrows,
+		calendar,
+		calendar_week,
+		show_icon,
+		format,
+		highlight_weekends,
+		start_end_years,
+		ui,
+	);
 	if res.changed() {
 		*data = date.into();
 	}
@@ -906,43 +1086,65 @@ where
 }
 
 /// Add a path (a singleline string editor) with a button next to it to open a file picker if the feature "filepicker" is active
-pub fn add_path(data: &mut std::path::PathBuf, label: &str, tooltip: &str, label_ratio: f32, read_only: bool, _filters: Vec<&str>, ui: &mut egui::Ui) -> egui::Response {
-	add_custom_ui(label, tooltip, label_ratio, read_only, ui, |ui, field_width| {
-		if let Some(path) = data.to_str() {
-			let mut path = path.to_string();
-			#[cfg(all(feature="filepicker", not(target_arch = "wasm32")))]
-			let field_width = if !read_only { field_width-35. } else { field_width };
-			
-			let res = ui.add_enabled(!read_only, egui::TextEdit::singleline(&mut path).desired_width(field_width));
-			if res.changed() {
-				*data=path.into();
-			}
-			#[cfg(all(feature="filepicker", not(target_arch = "wasm32")))]
-			let res = if !read_only {
-				let mut btn_res =ui.button("...");
-				if btn_res.clicked() {
-					let mut fd = rfd::FileDialog::new();
-					for f in &_filters {
-						fd=fd.add_filter(f.to_string(), &f.split(',').collect::<Vec<_>>());
-					}
-					if !_filters.is_empty() {
-						fd=fd.add_filter("All Files".to_string(), &["*.*"]);
-					}
-					let filepath = fd.pick_file();
-					if let Some(filepath) = filepath {
-						*data=filepath;
-						btn_res.mark_changed();
-					}
+pub fn add_path(
+	data: &mut std::path::PathBuf,
+	label: &str,
+	tooltip: &str,
+	label_ratio: f32,
+	read_only: bool,
+	_filters: Vec<&str>,
+	ui: &mut egui::Ui,
+) -> egui::Response {
+	add_custom_ui(
+		label,
+		tooltip,
+		label_ratio,
+		read_only,
+		ui,
+		|ui, field_width| {
+			if let Some(path) = data.to_str() {
+				let mut path = path.to_string();
+				#[cfg(all(feature = "filepicker", not(target_arch = "wasm32")))]
+				let field_width = if !read_only {
+					field_width - 35.
+				} else {
+					field_width
+				};
+
+				let res = ui.add_enabled(
+					!read_only,
+					egui::TextEdit::singleline(&mut path).desired_width(field_width),
+				);
+				if res.changed() {
+					*data = path.into();
 				}
-				res.union(btn_res)
-			} else {
+				#[cfg(all(feature = "filepicker", not(target_arch = "wasm32")))]
+				let res = if !read_only {
+					let mut btn_res = ui.button("...");
+					if btn_res.clicked() {
+						let mut fd = rfd::FileDialog::new();
+						for f in &_filters {
+							fd = fd.add_filter(f.to_string(), &f.split(',').collect::<Vec<_>>());
+						}
+						if !_filters.is_empty() {
+							fd = fd.add_filter("All Files".to_string(), &["*.*"]);
+						}
+						let filepath = fd.pick_file();
+						if let Some(filepath) = filepath {
+							*data = filepath;
+							btn_res.mark_changed();
+						}
+					}
+					res.union(btn_res)
+				} else {
+					res
+				};
 				res
-			};
-			res
-		} else {
-			ui.response()
-		}
-	})
+			} else {
+				ui.response()
+			}
+		},
+	)
 }
 
 /// An utility wrapper around [`egui::Color32`].
@@ -1061,19 +1263,57 @@ impl_mat_inspect!(add_mat2x2, Mat2x2, [[m11, m12], [m21, m22]]);
 #[cfg(feature = "nalgebra_glm")]
 impl_mat_inspect!(add_mat2x3, Mat2x3, [[m11, m12, m13], [m21, m22, m23]]);
 #[cfg(feature = "nalgebra_glm")]
-impl_mat_inspect!(add_mat2x4, Mat2x4, [[m11, m12, m13, m14], [m21, m22, m23, m24]]);
+impl_mat_inspect!(
+	add_mat2x4,
+	Mat2x4,
+	[[m11, m12, m13, m14], [m21, m22, m23, m24]]
+);
 #[cfg(feature = "nalgebra_glm")]
 impl_mat_inspect!(add_mat3x2, Mat3x2, [[m11, m12], [m21, m22], [m31, m32]]);
 #[cfg(feature = "nalgebra_glm")]
-impl_mat_inspect!(add_mat3x3, Mat3x3, [[m11, m12, m13], [m21, m22, m23], [m31, m32, m33]]);
+impl_mat_inspect!(
+	add_mat3x3,
+	Mat3x3,
+	[[m11, m12, m13], [m21, m22, m23], [m31, m32, m33]]
+);
 #[cfg(feature = "nalgebra_glm")]
-impl_mat_inspect!(add_mat3x4, Mat3x4, [[m11, m12, m13, m14], [m21, m22, m23, m24], [m31, m32, m33, m34]]);
+impl_mat_inspect!(
+	add_mat3x4,
+	Mat3x4,
+	[
+		[m11, m12, m13, m14],
+		[m21, m22, m23, m24],
+		[m31, m32, m33, m34]
+	]
+);
 #[cfg(feature = "nalgebra_glm")]
-impl_mat_inspect!(add_mat4x2, Mat4x2, [[m11, m12], [m21, m22], [m31, m32], [m41, m42]]);
+impl_mat_inspect!(
+	add_mat4x2,
+	Mat4x2,
+	[[m11, m12], [m21, m22], [m31, m32], [m41, m42]]
+);
 #[cfg(feature = "nalgebra_glm")]
-impl_mat_inspect!(add_mat4x3, Mat4x3, [[m11, m12, m13], [m21, m22, m23], [m31, m32, m33], [m41, m42, m43]]);
+impl_mat_inspect!(
+	add_mat4x3,
+	Mat4x3,
+	[
+		[m11, m12, m13],
+		[m21, m22, m23],
+		[m31, m32, m33],
+		[m41, m42, m43]
+	]
+);
 #[cfg(feature = "nalgebra_glm")]
-impl_mat_inspect!(add_mat4x4, Mat4x4, [[m11, m12, m13, m14], [m21, m22, m23, m24], [m31, m32, m33, m34], [m41, m42, m43, m44]]);
+impl_mat_inspect!(
+	add_mat4x4,
+	Mat4x4,
+	[
+		[m11, m12, m13, m14],
+		[m21, m22, m23, m24],
+		[m31, m32, m33, m34],
+		[m41, m42, m43, m44]
+	]
+);
 
 /// Display and edit a HashMap<String, T> with configurable behavior
 ///
@@ -1100,10 +1340,10 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 	editable_keys: bool,
 	ui: &mut egui::Ui,
 ) -> egui::Response {
-	let id = if parent_id == egui::Id::NULL { 
-		ui.next_auto_id() 
-	} else { 
-		parent_id.with(label) 
+	let id = if parent_id == egui::Id::NULL {
+		ui.next_auto_id()
+	} else {
+		parent_id.with(label)
 	};
 	let mut changed = false;
 	let data_len = data.len();
@@ -1129,16 +1369,18 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 								changed = true;
 							}
 
-							let value_res = ui.vertical(|ui| {
-								value.inspect_with_custom_id(
-									id.with(&edited_key),
-									"",
-									tooltip,
-									0.0,
-									read_only,
-									ui,
-								)
-							}).inner;
+							let value_res = ui
+								.vertical(|ui| {
+									value.inspect_with_custom_id(
+										id.with(&edited_key),
+										"",
+										tooltip,
+										0.0,
+										read_only,
+										ui,
+									)
+								})
+								.inner;
 
 							res.union(value_res)
 						})
@@ -1155,7 +1397,8 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 									read_only,
 									ui,
 								)
-							}).inner
+							})
+							.inner
 						})
 					})
 				};
@@ -1170,7 +1413,8 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 	let content_resp = if !label.is_empty() {
 		egui::CollapsingHeader::new(format!("{label} [{}]", data_len))
 			.id_salt(id.with("collapse"))
-			.show(ui, add_content).body_returned
+			.show(ui, add_content)
+			.body_returned
 	} else {
 		Some(add_content(ui))
 	};
@@ -1179,16 +1423,22 @@ pub fn add_hashmap<T: EguiInspect + Default + Clone>(
 			ui.horizontal_top(|ui| {
 				ui.add_space(ui.available_width() - 50.0);
 
-				if ui.add(egui::Button::new("+").min_size(egui::Vec2::new(20., 20.))).clicked() {
+				if ui
+					.add(egui::Button::new("+").min_size(egui::Vec2::new(20., 20.)))
+					.clicked()
+				{
 					let mut i = 0;
-					while data.contains_key(&i.to_string()) { 
-						i += 1; 
+					while data.contains_key(&i.to_string()) {
+						i += 1;
 					}
 					data.insert(i.to_string(), T::default());
 					changed = true;
 				}
 				#[allow(clippy::collapsible_if)]
-				if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20., 20.))).clicked() {
+				if ui
+					.add(egui::Button::new("-").min_size(egui::Vec2::new(20., 20.)))
+					.clicked()
+				{
 					if let Some(last_key) = data.keys().last().cloned() {
 						data.remove(&last_key);
 						changed = true;
@@ -1240,10 +1490,10 @@ where
 	T: Default + Clone,
 	F: Fn(&mut T, egui::Id, &str, &str, f32, bool, &mut egui::Ui) -> egui::Response,
 {
-	let id = if parent_id == egui::Id::NULL { 
-		ui.next_auto_id() 
-	} else { 
-		parent_id.with(label) 
+	let id = if parent_id == egui::Id::NULL {
+		ui.next_auto_id()
+	} else {
+		parent_id.with(label)
 	};
 	let mut changed = false;
 	let data_len = data.len();
@@ -1269,9 +1519,19 @@ where
 								changed = true;
 							}
 
-							let value_res = ui.vertical(|ui| {
-								custom_fn(&mut value, id.with(&edited_key), "", tooltip, 0.0, read_only, ui)
-							}).inner;
+							let value_res = ui
+								.vertical(|ui| {
+									custom_fn(
+										&mut value,
+										id.with(&edited_key),
+										"",
+										tooltip,
+										0.0,
+										read_only,
+										ui,
+									)
+								})
+								.inner;
 
 							res.union(value_res)
 						})
@@ -1279,7 +1539,15 @@ where
 				} else {
 					ui.horizontal_top(|ui| {
 						ui.add_enabled_ui(!read_only, |ui| {
-							custom_fn(&mut value, id.with(&edited_key), &key, tooltip, label_ratio, read_only, ui)
+							custom_fn(
+								&mut value,
+								id.with(&edited_key),
+								&key,
+								tooltip,
+								label_ratio,
+								read_only,
+								ui,
+							)
 						})
 					})
 				};
@@ -1295,7 +1563,8 @@ where
 	let content_resp = if !label.is_empty() {
 		egui::CollapsingHeader::new(format!("{label} [{}]", data_len))
 			.id_salt(id.with("collapse"))
-			.show(ui, add_content).body_returned
+			.show(ui, add_content)
+			.body_returned
 	} else {
 		Some(add_content(ui))
 	};
@@ -1306,16 +1575,22 @@ where
 			ui.horizontal_top(|ui| {
 				ui.add_space(ui.available_width() - 50.0);
 
-				if ui.add(egui::Button::new("+").min_size(egui::Vec2::new(20., 20.))).clicked() {
+				if ui
+					.add(egui::Button::new("+").min_size(egui::Vec2::new(20., 20.)))
+					.clicked()
+				{
 					let mut i = 0;
-					while data.contains_key(&i.to_string()) { 
-						i += 1; 
+					while data.contains_key(&i.to_string()) {
+						i += 1;
 					}
 					data.insert(i.to_string(), T::default());
 					changed = true;
 				}
 				#[allow(clippy::collapsible_if)]
-				if ui.add(egui::Button::new("-").min_size(egui::Vec2::new(20., 20.))).clicked() {
+				if ui
+					.add(egui::Button::new("-").min_size(egui::Vec2::new(20., 20.)))
+					.clicked()
+				{
 					if let Some(last_key) = data.keys().last().cloned() {
 						data.remove(&last_key);
 						changed = true;
@@ -1324,7 +1599,7 @@ where
 			});
 		});
 	}
-	
+
 	let mut final_res = ui.response();
 	if let Some(body_res) = content_resp {
 		final_res = final_res.union(body_res);
@@ -1337,3 +1612,5 @@ where
 }
 
 mod base_type_inspect;
+#[allow(missing_docs)]
+pub mod collapsing_enum_variant_editor;

@@ -1,8 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
-use syn::spanned::Spanned;
+use syn::Field;
 use syn::Type;
-use syn::{Field};
+use syn::spanned::Spanned;
 
 use crate::AttributeArgs;
 
@@ -40,7 +40,12 @@ pub fn prettify_name(s: &str) -> String {
 		.join(" ")
 }
 
-pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs: &AttributeArgs, default_field_name:String) -> TokenStream {
+pub(crate) fn get_function_call(
+	field_access: TokenStream,
+	field: &Field,
+	attrs: &AttributeArgs,
+	default_field_name: String,
+) -> TokenStream {
 	let name = &field.ident;
 
 	let name_str = if attrs.transparent {
@@ -54,12 +59,12 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 				} else {
 					prettify_name(&default_field_name.to_string())
 				}
-			},
+			}
 		}
 	};
 	let read_only = attrs.read_only;
-	let slider= &attrs.slider;
-	let range= &attrs.range;
+	let slider = &attrs.slider;
+	let range = &attrs.range;
 	let mut tooltip = "";
 	if let Some(ttip) = attrs.tooltip.as_ref() {
 		tooltip = ttip;
@@ -74,9 +79,9 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 						}).inner);
 					}
 				};
-			},
+			}
 			Err(e) => {
-				let msg=e.to_string();
+				let msg = e.to_string();
 				return quote_spanned! {
 					field.span() => {
 						compile_error!(#msg);
@@ -87,7 +92,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 	} else if let Some(range) = slider {
 		let min = range.min;
 		let max = range.max;
-		let ty = proc_macro2::Ident::new(&get_path_str(&field.ty), proc_macro2::Span::call_site()); 
+		let ty = proc_macro2::Ident::new(&get_path_str(&field.ty), proc_macro2::Span::call_site());
 		return quote_spanned! {
 			field.span() => {
 				combine!(ui.scope(|ui| {
@@ -98,7 +103,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 	} else if let Some(range) = range {
 		let min = range.min;
 		let max = range.max;
-		let ty = proc_macro2::Ident::new(&get_path_str(&field.ty), proc_macro2::Span::call_site()); 
+		let ty = proc_macro2::Ident::new(&get_path_str(&field.ty), proc_macro2::Span::call_site());
 		return quote_spanned! {field.span() => {
 				combine!(ui.scope(|ui| {
 					egui_field_editor::add_number(#field_access, &#name_str, #tooltip, label_ratio, read_only || #read_only, Some((#min as #ty, #max as #ty)), ui)
@@ -141,10 +146,14 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 			}
 		};
 	} else if let Some(file) = &attrs.file {
-		let filters: Vec<proc_macro2::TokenStream> = file.filter.iter().map(|e| {
-			let lit = syn::LitStr::new(e, proc_macro2::Span::call_site());
-			quote! { #lit }
-		}).collect();
+		let filters: Vec<proc_macro2::TokenStream> = file
+			.filter
+			.iter()
+			.map(|e| {
+				let lit = syn::LitStr::new(e, proc_macro2::Span::call_site());
+				quote! { #lit }
+			})
+			.collect();
 		return quote_spanned! {field.span() => {
 				combine!(ui.scope(|ui| {
 					egui_field_editor::add_path(#field_access, &#name_str, #tooltip, label_ratio, read_only || #read_only, vec![#(#filters),*], ui)
@@ -152,18 +161,18 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 			}
 		};
 	} else if let Some(date) = &attrs.date {
-		let combo_boxes=date.combo_boxes;
-		let arrows=date.arrows;
-		let calendar=date.calendar;
-		let calendar_week=date.calendar_week;
-		let show_icon=date.show_icon;
-		let format=date.format.to_owned();
-		let highlight_weekends=date.highlight_weekends;
-		let mut start_end_years = quote_spanned!{field.span() => {None}};
+		let combo_boxes = date.combo_boxes;
+		let arrows = date.arrows;
+		let calendar = date.calendar;
+		let calendar_week = date.calendar_week;
+		let show_icon = date.show_icon;
+		let format = date.format.to_owned();
+		let highlight_weekends = date.highlight_weekends;
+		let mut start_end_years = quote_spanned! {field.span() => {None}};
 		if let Some(range) = &date.start_end_years {
 			let min = range.min;
 			let max = range.max;
-			start_end_years = quote_spanned!{field.span() => {Some(#min..=#max)}};
+			start_end_years = quote_spanned! {field.span() => {Some(#min..=#max)}};
 		}
 		return quote_spanned! {field.span() => {
 				combine!(ui.scope(|ui| {
@@ -183,7 +192,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 	} else if let Some(hmap_opts) = &attrs.hashmap {
 		let allow_add_delete = hmap_opts.allow_add_delete;
 		let editable_keys = hmap_opts.editable_keys;
-		
+
 		if let Some(custom_fn) = &hmap_opts.custom_fn {
 			match custom_fn.parse::<TokenStream>() {
 				Ok(custom_fn_ident) => {
@@ -207,7 +216,7 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 							}).inner);
 						}
 					};
-				},
+				}
 				Err(e) => {
 					let msg = e.to_string();
 					return quote_spanned! {
@@ -249,5 +258,4 @@ pub(crate) fn get_function_call(field_access :TokenStream, field: &Field, attrs:
 			}).inner);
 		}
 	}
-
 }

@@ -1,10 +1,9 @@
-
 #![cfg_attr(target_arch = "wasm32", no_main)]
 
 #[cfg(target_arch = "wasm32")]
-use eframe::web_sys;
-#[cfg(target_arch = "wasm32")]
 use eframe::wasm_bindgen::JsCast;
+#[cfg(target_arch = "wasm32")]
+use eframe::web_sys;
 
 #[cfg(target_arch = "wasm32")]
 include!("shared/nalgebra_glm.rs");

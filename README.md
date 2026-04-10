@@ -45,8 +45,8 @@ See the following examples:
 You can add a reference to this crate in your Cargo.toml:
 ```toml
 [dependencies]
-egui_field_editor = { version = "0.4", features=["all"] }
-egui_field_editor = "0.4"
+egui_field_editor = { version = "0.5", features=["all"] }
+egui_field_editor = "0.5"
 ```
 
 And then, instantiate a EguiInspector giving it a mutable reference to the object to inspect.

@@ -7,7 +7,7 @@ use egui_extras::syntax_highlighting::{code_view_ui, CodeTheme};
 use egui_field_editor::{EguiInspect, EguiInspector};
 use eframe::egui;
 
-#[derive(EguiInspect, Debug, Default, Clone)]
+#[derive(EguiInspect, Debug, Default, Clone, PartialEq)]
 pub struct TestData(
 	#[inspect(name="Name", tooltip="You can name tuple field")]
 	String,
@@ -75,6 +75,7 @@ struct MyApp {
 	#[cfg(feature = "arrayvec")]
 	pub array_vec: arrayvec::ArrayVec<TestData,4>,
 	pub hashmap: HashMap<String, u64>,
+	pub optional_string_list: Vec<egui::Stroke>,
 	pub u8: u8,
 	#[inspect(range(min = 0., max = 12.0))]
 	pub double: f64,
@@ -103,6 +104,7 @@ impl Default for MyApp {
 			#[cfg(feature = "arrayvec")]
 			array_vec: arrayvec::ArrayVec::new(),
 			hashmap,
+			optional_string_list: Default::default(),
 			u8: Default::default(),
 			double: Default::default(),
 			float: Default::default(),
