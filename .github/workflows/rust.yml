@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 6 * * *"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        features:
+          - ""
+          - "--all-features"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Update
+        run: cargo update
+
+      - name: Check
+        run: cargo check ${{ matrix.features }}
+
+      - name: Test
+        run: cargo test --lib --bins --tests --no-run ${{ matrix.features }}
