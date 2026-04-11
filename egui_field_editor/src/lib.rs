@@ -1610,6 +1610,33 @@ where
 	final_res
 }
 
+#[macro_export]
+#[doc(hidden)]
+/// Ugly macro used by derive proc_macro to accumulate egui responses across fields.
+///
+/// This macro merges UI responses produced by rendering expressions ($r)
+/// into a single aggregated response stored in `$res`.
+///
+/// If multiple responses belong to the same `layer_id`, they are merged via `union`.
+/// Otherwise, only the `changed` state is propagated.
+macro_rules! combine_responses {
+	($r:expr, $res:ident) => {
+		if let Some(ref mut total) = $res { 
+			let content_resp = $r;
+			if total.layer_id == content_resp.layer_id {
+				*total = total.union(content_resp);
+			} else {
+				if content_resp.changed() {
+					total.mark_changed();
+				}
+			}
+		}
+		else {
+			$res = Some($r);
+		}
+	};
+}
+
 mod base_type_inspect;
-#[allow(missing_docs)]
+#[doc(hidden)]
 pub mod collapsing_enum_variant_editor;

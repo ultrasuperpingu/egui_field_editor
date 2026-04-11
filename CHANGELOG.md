@@ -1,3 +1,7 @@
+v0.5.1
+ - Fix panic caused by merging responses from different layers (layer_id mismatch)
+ - Remove duplicated macro expansion in generated code
+ - Replace removed macro logic with a #[doc(hidden)] helper macro in the egui_field_editor crate
 v0.5.0
  - Port to egui 0.34
  - Fixed Vec<enum>

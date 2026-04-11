@@ -2,7 +2,7 @@
 use std::net::Ipv4Addr;
 use std::collections::HashMap;
 
-use egui::Color32;
+use egui::{Color32, Stroke};
 use egui_extras::syntax_highlighting::{code_view_ui, CodeTheme};
 use egui_field_editor::{EguiInspect, EguiInspector};
 use eframe::egui;
@@ -84,9 +84,35 @@ struct MyApp {
 	pub float: f32,
 	#[inspect(tooltip="An enum is collapsible because variants can contains data")]
 	pub my_enum:MyEnum,
+	pub enum_list:Vec<MyEnum>,
+	pub shape_list:Vec<Shape>,
 	pub char:char,
 	#[inspect(from_string)]
 	pub ipv4: Ipv4Addr
+}
+
+#[derive(EguiInspect, Clone, Debug, PartialEq)]
+pub enum Shape {
+	Circle {
+		fill_color: Option<Color32>,
+		size: f32,
+		stroke: Option<Stroke>,
+	},
+	Rect {
+		fill_color: Option<Color32>,
+		size: f32,
+		stroke: Option<Stroke>
+	},
+	Composed(Vec<Shape>)
+}
+impl Default for Shape {
+	fn default() -> Self {
+		Shape::Circle {
+			fill_color: Some(Color32::WHITE),
+			size: 0.7,
+			stroke: None
+		}
+	}
 }
 #[derive(EguiInspect)]
 pub struct Empty;
@@ -112,6 +138,8 @@ impl Default for MyApp {
 			double: Default::default(),
 			float: Default::default(),
 			my_enum: Default::default(),
+			enum_list: Default::default(),
+			shape_list: Default::default(),
 			char: Default::default(), 
 			ipv4: Ipv4Addr::UNSPECIFIED
 		}

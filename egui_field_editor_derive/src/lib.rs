@@ -391,12 +391,6 @@ fn get_code_for_struct_named_fields(fields: &FieldsNamed) -> TokenStream {
 			let mut add_content=|ui:&mut egui::Ui| {
 				let mut res: Option<egui::Response> = None;
 
-				macro_rules! combine {
-					($r:expr) => {
-						if let Some(ref mut total) = res { *total = total.union($r); }
-						else { res = Some($r); }
-					};
-				}
 				#(#recurse)*
 				res.unwrap_or_else(|| ui.label("Empty Struct"))
 			};
@@ -444,12 +438,6 @@ fn get_code_for_struct_unnamed_fields(fields: &FieldsUnnamed) -> TokenStream {
 			let mut add_content=|ui:&mut egui::Ui| {
 				let mut res: Option<egui::Response> = None;
 
-				macro_rules! combine {
-					($r:expr) => {
-						if let Some(ref mut total) = res { *total = total.union($r); }
-						else { res = Some($r); }
-					};
-				}
 				#(#recurse)*
 				res.unwrap_or_else(|| ui.label("Empty UnamedStruct"))
 			};
@@ -556,12 +544,6 @@ fn get_code_blocks_for_unamed_variant(
 			let mut add_content = |ui:&mut egui::Ui| {
 				let mut res: Option<egui::Response> = None;
 
-				macro_rules! combine {
-					($r:expr) => {
-						if let Some(ref mut total) = res { *total = total.union($r); }
-						else { res = Some($r); }
-					};
-				}
 				#(#recurse)*
 				res.unwrap_or_else(|| ui.label("Empty UnamedStruct"))
 			};
@@ -646,18 +628,10 @@ fn get_code_blocks_for_named_variant(
 
 	variant_content_edit.push(quote! {
 		#enum_name::#variant_name { #( #field_bindings ),* } => {
-			//ui.indent(id, |ui| {
-				let mut res: Option<egui::Response> = None;
+			let mut res: Option<egui::Response> = None;
 
-				macro_rules! combine {
-					($r:expr) => {
-						if let Some(ref mut total) = res { *total = total.union($r); }
-						else { res = Some($r); }
-					};
-				}
-				#( #inspect_calls )*
-				res.unwrap_or_else(|| ui.label("Empty UnamedStruct"))
-			//}).inner
+			#( #inspect_calls )*
+			res.unwrap_or_else(|| ui.label("Empty UnamedStruct"))
 		}
 	});
 }
