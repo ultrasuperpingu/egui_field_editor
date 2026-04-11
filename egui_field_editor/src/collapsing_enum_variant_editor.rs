@@ -1,5 +1,4 @@
-#![allow(unused)
-]
+#![allow(unused)]
 use egui::{
 	Id, Response, Sense, Ui, WidgetText,
 	collapsing_header::{CollapsingState, IconPainter, paint_default_icon},
@@ -135,7 +134,7 @@ impl CollapsingEnumVariantEditor {
 
 struct Prepared {
 	header_response: Response,
-	combo_response: Response,
+	combo_response: Option<Response>,
 	state: CollapsingState,
 	openness: f32,
 }
@@ -147,7 +146,7 @@ impl CollapsingEnumVariantEditor {
 		ui: &mut Ui,
 		edited_obj: &mut Obj,
 		selected_text: impl Into<WidgetText>,
-		combo_content: impl FnOnce(&mut Ui, &mut Obj) -> R,
+		combo_content: impl FnOnce(&mut Ui, &mut Obj) -> Response,
 		add_body: impl FnOnce(&mut Ui, &mut Obj) -> R,
 		indented: bool,
 	) -> CollapsingComboBoxResponse<R> {
@@ -166,9 +165,9 @@ impl CollapsingEnumVariantEditor {
 			} = self.begin(ui, edited_obj, selected_text, combo_content); // show the header
 
 			let ret_response = if indented {
-				state.show_body_indented(&header_response, ui, |ui| { add_body(ui, edited_obj) } )
+				state.show_body_indented(&header_response, ui, |ui| add_body(ui, edited_obj))
 			} else {
-				state.show_body_unindented(ui, |ui| { add_body(ui, edited_obj) } )
+				state.show_body_unindented(ui, |ui| add_body(ui, edited_obj))
 			};
 
 			if let Some(ret_response) = ret_response {
@@ -191,12 +190,12 @@ impl CollapsingEnumVariantEditor {
 		})
 		.inner
 	}
-	fn begin<R, Obj>(
+	fn begin<Obj>(
 		self,
 		ui: &mut Ui,
 		edited_obj: &mut Obj,
 		selected_text: impl Into<WidgetText>,
-		combo_content: impl FnOnce(&mut Ui, &mut Obj) -> R,
+		combo_content: impl FnOnce(&mut Ui, &mut Obj) -> Response,
 	) -> Prepared {
 		let Self {
 			label_ratio,
@@ -215,7 +214,7 @@ impl CollapsingEnumVariantEditor {
 		let id = ui.make_persistent_id(id_salt);
 
 		let mut state = CollapsingState::load_with_default_open(ui.ctx(), id, default_open);
-		// --- HEADER UI ---
+
 		let (mut header_response, combo_response) = ui
 			.horizontal(|ui| {
 				let total_width = ui.available_width();
@@ -232,7 +231,7 @@ impl CollapsingEnumVariantEditor {
 				let mut child_ui = ui.new_child(
 					egui::UiBuilder::new()
 						.max_rect(rect)
-						.layout(egui::Layout::left_to_right(egui::Align::Center)),
+						.layout(egui::Layout::left_to_right(egui::Align::LEFT)),
 				);
 
 				let (icon_rect, _) = ui.spacing().icon_rectangles(rect);
@@ -247,7 +246,7 @@ impl CollapsingEnumVariantEditor {
 					paint_default_icon(ui, openness, &icon_resp)
 				}
 
-				let label_response = child_ui
+				let mut label_response = child_ui
 					.add(
 						egui::Label::new(text.clone())
 							.truncate()
@@ -255,8 +254,13 @@ impl CollapsingEnumVariantEditor {
 							.show_tooltip_when_elided(true),
 					)
 					.union(icon_resp);
-				label_response.show_tooltip_text(tooltip);
-				let mut changed = false;
+				if !tooltip.is_empty() {
+					if self.enabled {
+						label_response = label_response.on_hover_text(tooltip);
+					} else {
+						label_response = label_response.on_disabled_hover_text(tooltip);
+					}
+				}
 
 				let mut combo_response = ui
 					.allocate_ui_with_layout(
@@ -266,14 +270,12 @@ impl CollapsingEnumVariantEditor {
 							egui::ComboBox::from_id_salt(id.with("combo"))
 								.selected_text(selected_text)
 								.width(combo_width)
-								.show_ui(ui, |ui| { combo_content(ui, edited_obj) } )
-								.response
+								.truncate()
+								.show_ui(ui, |ui| combo_content(ui, edited_obj))
+								.inner
 						},
 					)
 					.inner;
-				if changed {
-					combo_response.mark_changed();
-				}
 				(label_response, combo_response)
 			})
 			.inner;
@@ -303,10 +305,17 @@ impl CollapsingEnumVariantEditor {
 		ui: &mut Ui,
 		edited_obj: &mut Obj,
 		selected_text: &String,
-		combo_content: impl FnOnce(&mut Ui, &mut Obj) -> R,
+		combo_content: impl FnOnce(&mut Ui, &mut Obj) -> Response,
 		add_body: impl FnOnce(&mut Ui, &mut Obj) -> R,
 	) -> CollapsingComboBoxResponse<R> {
-		self.show(ui, edited_obj, selected_text, combo_content, add_body, false)
+		self.show(
+			ui,
+			edited_obj,
+			selected_text,
+			combo_content,
+			add_body,
+			false,
+		)
 	}
 }
 
@@ -315,7 +324,7 @@ pub struct CollapsingComboBoxResponse<R> {
 	/// Response of the actual clickable header.
 	pub header_response: Response,
 
-	pub combo_response: Response,
+	pub combo_response: Option<Response>,
 
 	/// None iff collapsed.
 	pub body_response: Option<Response>,

@@ -75,12 +75,14 @@ struct MyApp {
 	#[cfg(feature = "arrayvec")]
 	pub array_vec: arrayvec::ArrayVec<TestData,4>,
 	pub hashmap: HashMap<String, u64>,
-	pub optional_string_list: Vec<egui::Stroke>,
+	pub optional_string_list: Vec<Option<String>>,
+	pub stroke: egui::Stroke,
 	pub u8: u8,
 	#[inspect(range(min = 0., max = 12.0))]
 	pub double: f64,
 	#[inspect(slider(min = "-1000.", max = 12.0))]
 	pub float: f32,
+	#[inspect(tooltip="An enum is collapsible because variants can contains data")]
 	pub my_enum:MyEnum,
 	pub char:char,
 	#[inspect(from_string)]
@@ -105,6 +107,7 @@ impl Default for MyApp {
 			array_vec: arrayvec::ArrayVec::new(),
 			hashmap,
 			optional_string_list: Default::default(),
+			stroke: Default::default(),
 			u8: Default::default(),
 			double: Default::default(),
 			float: Default::default(),

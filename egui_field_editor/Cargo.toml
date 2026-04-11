@@ -16,8 +16,8 @@ all-features = true
 [dependencies]
 egui = ">=0.34"
 egui_dnd = ">=0.15.0"
-egui_field_editor_derive = { path = "../egui_field_editor_derive" }
-#egui_field_editor_derive = "0.5.0"
+#egui_field_editor_derive = { path = "../egui_field_editor_derive" }
+egui_field_editor_derive = "0.5.0"
 nalgebra-glm = { version = ">=0.20", features = [], optional=true }
 egui_extras = { version = ">=0.34", features = ["syntect", "datepicker"], optional=true }
 rfd = { version = ">=0.13", features = [], optional=true }

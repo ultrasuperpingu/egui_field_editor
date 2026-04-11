@@ -1000,7 +1000,7 @@ pub fn add_civil_date(
 	if let Some(start_end_years) = start_end_years {
 		widget = widget.start_end_years(start_end_years);
 	}
-	let res = if id != egui::Id::NULL {
+	if id != egui::Id::NULL {
 		// Ugly hack because DatePickerButton::id_salt() taking a &str
 		let mut hasher = std::hash::DefaultHasher::new();
 		id.hash(&mut hasher);
@@ -1014,8 +1014,7 @@ pub fn add_civil_date(
 		)
 	} else {
 		crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
-	};
-	res
+	}
 }
 
 /// Adds a date picker for date types.

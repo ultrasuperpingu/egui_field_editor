@@ -32,12 +32,12 @@ This is a side project, so the API might not be stable yet.
 
 
 See the following examples:
- * [simple](egui_field_editor/examples/shared/simple.rs): a simple example
- * [advanced](egui_field_editor/examples/shared/advanced.rs): features more advanced features.
- * [manual_implement](egui_field_editor/examples/shared/manual_implement.rs): see [Implement `EguiInspect` yourself](#implement-eguiinspect-yourself)
- * [shared_data](egui_field_editor/examples/shared/shared_data.rs): features use of [Rc<RefCell<String>>], [Arc<Mutex<String>>] and [Arc<RwLock<String>>].
- * [nalgebra_glm](egui_field_editor/examples/shared/nalgebra_glm.rs): example with `nalgebra_glm` types.
- * [datepicker](egui_field_editor/examples/shared/datepicker.rs): example with `NaiveDate`.
+ * [simple](https://github.com/ultrasuperpingu/egui_field_editor/examples/shared/simple.rs): a simple example
+ * [advanced](https://github.com/ultrasuperpingu/egui_field_editor/examples/shared/advanced.rs): features more advanced features.
+ * [manual_implement](https://github.com/ultrasuperpingu/egui_field_editor/examples/shared/manual_implement.rs): see [Implement `EguiInspect` yourself](#implement-eguiinspect-yourself)
+ * [shared_data](https://github.com/ultrasuperpingu/egui_field_editor/examples/shared/shared_data.rs): features use of [Rc<RefCell<String>>], [Arc<Mutex<String>>] and [Arc<RwLock<String>>].
+ * [nalgebra_glm](https://github.com/ultrasuperpingu/egui_field_editor/examples/shared/nalgebra_glm.rs): example with `nalgebra_glm` types.
+ * [datepicker](https://github.com/ultrasuperpingu/egui_field_editor/examples/shared/datepicker.rs): example with `NaiveDate`.
 
 # Documentation
 ## Installation

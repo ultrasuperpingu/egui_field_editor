@@ -324,56 +324,6 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 			//TODO: find a way to use it (if only Unit variants) or don't declare it if not needed
 			#[allow(unused_variables)]
 			let parent_id = if _parent_id == egui::Id::NULL { egui::Id::NULL } else { id };
-			/*let available_width = ui.available_width();
-			let label_width = available_width * label_ratio;
-			let field_width = 100.0f32.max(available_width * (1.0-label_ratio) - 10.0);
-
-			let combo_resp = ui.horizontal(|ui| {
-				let (rect, _label_res) = ui.allocate_exact_size(
-					egui::vec2(label_width, ui.spacing().interact_size.y),
-					egui::Sense::hover(),
-				);
-
-				let mut child_ui = ui.new_child(egui::UiBuilder::new()
-					.max_rect(rect)
-					.layout(egui::Layout::left_to_right(egui::Align::Min))
-
-				);
-
-				let label_res = child_ui.add(
-					egui::Label::new(label)
-						.truncate()
-						.show_tooltip_when_elided(true)
-						.halign(egui::Align::LEFT));
-
-				if !tooltip.is_empty() {
-					if !read_only {
-						label_res.on_hover_text(tooltip);
-					} else {
-						label_res.on_disabled_hover_text(tooltip);
-					}
-				}
-				let mut changed = false;
-				ui.add_enabled_ui(!read_only, |ui| {
-					let mut resp = egui::ComboBox::from_id_salt(id)
-						.width(field_width)
-						.selected_text(match self {
-							#(#variant_texts)*
-						})
-						.show_ui(ui, |ui| {
-							#(#variant_select_conditions)*
-						}).response;
-					if changed {
-						resp.mark_changed();
-					}
-					resp
-				}).inner
-			}).inner;
-
-			let content_resp = match self {
-				#(#variant_content_edit)*
-			};
-			content_resp.union(combo_resp)*/
 			let selected_text = match self {
 				#(#variant_texts)*
 			};
@@ -401,9 +351,18 @@ fn get_code_for_enum(enum_name: &Ident, data_enum: &DataEnum) -> TokenStream {
 				},
 				true,
 			);
-			main_res
-				.combo_response
-				.union(main_res.body_response.unwrap_or(ui.response()))
+			let mut response = if let Some(r) = main_res.body_returned {
+				r
+			} else {
+				ui.response()
+			};
+			if let Some(resp) = main_res.combo_response {
+				if resp.changed() {
+					response.mark_changed();
+				}
+				response = response.with_new_rect(resp.rect);
+			}
+			response
 		}
 	}
 }

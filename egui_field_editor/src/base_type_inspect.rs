@@ -550,14 +550,15 @@ where
 			id
 		};
 
-		let mut index = if self.is_none() { 0 } else { 1 };
+		/*let mut index = if self.is_none() { 0 } else { 1 };
 		let choices: [String; 2] = ["None".into(), "Some".into()];
 		let main_res = CollapsingEnumVariantEditor::new(
 			label,
 			tooltip,
 			label_ratio,
 		)
-		.default_open(true)
+		.default_open(self.is_some())
+		.enabled(!read_only)
 		.show(
 			ui,
 			self,
@@ -572,6 +573,7 @@ where
 				}
 				let mut resp = ui.response();
 				if changed {
+					println!("{} {}",changed, index);
 					resp.mark_changed();
 				}
 				resp
@@ -584,17 +586,79 @@ where
 			},
 			true,
 		);
-		if main_res.combo_response.changed() {
-			match index {
-				0 => *self = None,
-				1 => *self = Some(T::default()),
-				_ => unreachable!(),
+		if let Some(resp) = main_res.combo_response {
+			if resp.changed() {
+				match index {
+					0 => *self = None,
+					1 => *self = Some(T::default()),
+					_ => unreachable!(),
+				}
 			}
-		}
+			if let Some(body_resp) = main_res.body_returned {
+				resp.union(body_resp)
+			} else {
+				resp
+			}
+		} else {
+			if let Some(body_resp) = main_res.body_returned {
+				body_resp
+			} else {
+				ui.response()
+			}
+		}*/
+		let mut new_value = self.is_some();
 
-		main_res
-			.combo_response
-			.union(main_res.body_response.unwrap_or(ui.response()))
+		let main_res = CollapsingEnumVariantEditor::new(label, tooltip, label_ratio)
+			.default_open(self.is_some())
+			.enabled(!read_only)
+			.show(
+				ui,
+				self,
+				if new_value { "Some" } else { "None" },
+				|ui: &mut Ui, _| {
+					let mut changed = false;
+
+					if ui.selectable_label(!new_value, "None").clicked() {
+						new_value = false;
+						changed = true;
+					}
+
+					if ui.selectable_label(new_value, "Some").clicked() {
+						new_value = true;
+						changed = true;
+					}
+
+					let mut resp = ui.response();
+					if changed {
+						resp.mark_changed();
+					}
+					resp
+				},
+				|ui, edited_obj| match edited_obj {
+					None => ui.response(),
+					Some(inner) => {
+						inner.inspect_with_custom_id(parent_id, "", "", label_ratio, read_only, ui)
+					}
+				},
+				true,
+			);
+		let mut response = if let Some(r) = main_res.body_returned {
+			r
+		} else {
+			ui.response()
+		};
+		if let Some(resp) = main_res.combo_response
+			&& resp.changed()
+		{
+			match (self.is_some(), new_value) {
+				(false, true) => *self = Some(T::default()),
+				(true, false) => *self = None,
+				_ => {}
+			}
+			response.mark_changed();
+			response = response.with_new_rect(resp.rect);
+		}
+		response
 	}
 }
 
@@ -806,6 +870,7 @@ mod nalgebra_ui {
 }
 #[cfg(feature = "datepicker")]
 mod datepicker {
+	#[cfg(feature = "chrono")]
 	use crate::DateWrapper;
 	use crate::EguiInspect;
 	#[cfg(feature = "chrono")]
@@ -828,7 +893,7 @@ mod datepicker {
 				parent_id.with(label)
 			};
 			let widget = DatePickerButton::new(self);
-			let res = if id != egui::Id::NULL {
+			if id != egui::Id::NULL {
 				// Ugly hack because DatePickerButton::id_salt() needs a &str
 				let mut hasher = std::hash::DefaultHasher::new();
 				id.hash(&mut hasher);
@@ -842,8 +907,7 @@ mod datepicker {
 				)
 			} else {
 				crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
-			};
-			res
+			}
 		}
 	}
 	#[cfg(feature = "chrono")]
@@ -881,14 +945,13 @@ mod datepicker {
 			} else {
 				crate::add_widget(label, widget, tooltip, label_ratio, read_only, ui)
 			};
-			if res.changed() {
-				if let Some(d) = chrono::NaiveDate::from_ymd_opt(
+			if res.changed()
+				&& let Some(d) = chrono::NaiveDate::from_ymd_opt(
 					jiff_date.year() as i32,
 					jiff_date.month() as u32,
 					jiff_date.day() as u32,
 				) {
-					*self = d;
-				}
+				*self = d;
 			}
 			res
 		}
@@ -1021,11 +1084,9 @@ mod smallvec {
 					}
 					if ui
 						.add(egui::Button::new("-").min_size(egui::Vec2::new(20., 20.)))
-						.clicked()
+						.clicked() && self.pop().is_some()
 					{
-						if self.pop().is_some() {
-							changed = true;
-						}
+						changed = true;
 					}
 				});
 			});
@@ -1080,11 +1141,9 @@ mod arrayvec {
 					}
 					if ui
 						.add(egui::Button::new("-").min_size(egui::Vec2::new(20., 20.)))
-						.clicked()
+						.clicked() && self.pop().is_some()
 					{
-						if self.pop().is_some() {
-							changed = true;
-						}
+						changed = true;
 					}
 				});
 			});
