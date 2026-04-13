@@ -1,6 +1,6 @@
 [package]
 name = "egui_field_editor_derive"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2024"
 description = "Proc-macro derive of egui_field_editor::EguiInspect"
 license = "MIT"

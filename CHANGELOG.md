@@ -1,30 +1,33 @@
-v0.5.1
+## v0.5.2
+ - Remove useless and intrusive need to implement EguiInspect for generic types.
+ - Fix splitter inspector id
+## v0.5.1
  - Fix panic caused by merging responses from different layers (layer_id mismatch)
  - Remove duplicated macro expansion in generated code
  - Replace removed macro logic with a #[doc(hidden)] helper macro in the egui_field_editor crate
-v0.5.0
+## v0.5.0
  - Port to egui 0.34
- - Fixed Vec<enum>
+ - Fix Vec<enum>
  - Align labels left
- - Added a splitter to modify label_ratio in Inspector
- - Added Stroke
+ - Add a splitter to modify label_ratio in Inspector
+ - Add Stroke
  - Docs update
-v0.4.0
- - Added hashmap, smallvec and arrayvec support
-v0.3.0
- - Added label_ratio parameters to inspect functions
-v0.2.2
- - Added file picker
-v0.2.1
+## v0.4.0
+ - Add hashmap, smallvec and arrayvec support
+## v0.3.0
+ - Add label_ratio parameters to inspect functions
+## v0.2.2
+ - Add file picker
+## v0.2.1
  - Docs update
-v0.2.0
+## v0.2.0
  - First version of egui_field_editor
  - Full refactor
- - Added enum support
- - Added execution_btn
- - Added nalbegra_glm support
- - Added datepicker support
- - Implemented more basic types
-v0.1.2
-- Added field attribute `no_edit`, `skip`, `custom_func`, `custom_func_mut`
+ - Add enum support
+ - Add execution_btn
+ - Add nalbegra_glm support
+ - Add datepicker support
+ - Implement more basic types
+## v0.1.2
+- Add field attribute `no_edit`, `skip`, `custom_func`, `custom_func_mut`
 - Small refactoring

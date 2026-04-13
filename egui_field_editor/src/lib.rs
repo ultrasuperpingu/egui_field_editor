@@ -252,7 +252,7 @@ impl<'a, T: EguiInspect + ?Sized> Widget for EguiInspector<'a, T> {
 		);
 
 		let splitter_resp =
-			ui.interact(splitter_rect, ui.id().with("splitter"), egui::Sense::drag());
+			ui.interact(splitter_rect, id.with("splitter"), egui::Sense::drag());
 
 		let response: Option<Response> = ui.ctx().read_response(id);
 		let state = response.map(|r| r.widget_state()).unwrap_or_default();

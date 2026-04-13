@@ -2,8 +2,8 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-	Data, DataEnum, DataStruct, DeriveInput, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
-	Generics, Index, LitStr, Meta, parse_macro_input, parse_quote, spanned::Spanned,
+	Data, DataEnum, DataStruct, DeriveInput, Fields, FieldsNamed, FieldsUnnamed,
+	Index, LitStr, Meta, parse_macro_input, spanned::Spanned,
 };
 
 use darling::{FromDeriveInput, FromField, FromMeta, FromVariant};
@@ -166,7 +166,7 @@ pub fn derive_egui_field_editor(input: proc_macro::TokenStream) -> proc_macro::T
 	let exec_code = get_code_execute_btns(&attrs.execute_btn);
 	let name = input.ident;
 
-	let generics = add_trait_bounds(input.generics);
+	let generics = input.generics;
 	let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
 	let mut inspect_code = get_code_for_data(&input.data, &name);
@@ -191,16 +191,6 @@ pub fn derive_egui_field_editor(input: proc_macro::TokenStream) -> proc_macro::T
 	proc_macro::TokenStream::from(expanded)
 }
 
-fn add_trait_bounds(mut generics: Generics) -> Generics {
-	for param in &mut generics.params {
-		if let GenericParam::Type(ref mut type_param) = *param {
-			type_param
-				.bounds
-				.push(parse_quote!(egui_field_editor::EguiInspect));
-		}
-	}
-	generics
-}
 fn get_code_execute_btns(execs: &[ExecuteBtn]) -> TokenStream {
 	let recurse = execs.iter().map(|exec_fn| {
 		let label = if let Some(l) = &exec_fn.label {
