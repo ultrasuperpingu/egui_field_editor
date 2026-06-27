@@ -1,5 +1,6 @@
 use crate::EguiInspect;
 use crate::collapsing_enum_variant_editor::CollapsingEnumVariantEditor;
+use egui::text::CharIndex;
 use egui::{Color32, Stroke, StrokeKind};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -202,7 +203,7 @@ impl egui::TextBuffer for CharString {
 	fn as_str(&self) -> &str {
 		self.0.as_str()
 	}
-	fn insert_text(&mut self, text: &str, _char_index: usize) -> usize {
+	fn insert_text(&mut self, text: &str, _char_index: CharIndex) -> usize {
 		if !text.is_empty() {
 			let mut str = String::new();
 			str.push(text.chars().nth(0).unwrap()); //safety: text is not empty so it has a first char
@@ -210,7 +211,7 @@ impl egui::TextBuffer for CharString {
 		}
 		0
 	}
-	fn delete_char_range(&mut self, _char_range: std::ops::Range<usize>) {}
+	fn delete_char_range(&mut self, _char_range: std::ops::Range<CharIndex>) {}
 
 	fn type_id(&self) -> std::any::TypeId {
 		std::any::TypeId::of::<Self>()

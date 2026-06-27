@@ -123,7 +123,7 @@
 //! default = []
 //! ```
 
-use egui::{Color32, Response, Ui, Widget};
+use egui::{AsId, Color32, Response, Ui, Widget, widget_style::Classes};
 #[cfg(feature = "nalgebra_glm")]
 use nalgebra_glm::*;
 use std::{
@@ -211,7 +211,7 @@ impl<'a, T: EguiInspect + ?Sized> EguiInspector<'a, T> {
 	}
 	/// A source for the unique [`egui::Id`], e.g. `.id_salt("inspector")` or `.id_salt(loop_index)`.
 	#[inline]
-	pub fn id_salt(mut self, id_salt: impl std::hash::Hash) -> Self {
+	pub fn id_salt(mut self, id_salt: impl AsId) -> Self {
 		self.id_salt = Some(egui::Id::new(id_salt));
 		self
 	}
@@ -255,7 +255,10 @@ impl<'a, T: EguiInspect + ?Sized> Widget for EguiInspector<'a, T> {
 
 		let response: Option<Response> = ui.ctx().read_response(id);
 		let state = response.map(|r| r.widget_state()).unwrap_or_default();
-		let stroke = ui.style().separator_style(state).stroke;
+		let stroke = ui
+			.style()
+			.separator_style(&Classes::default(), state)
+			.stroke;
 		ui.painter().vline(
 			splitter_rect.center().x,
 			splitter_rect.top()..=splitter_rect.top() + 20.0,
@@ -602,10 +605,8 @@ pub fn add_number_slider<Num: egui::emath::Numeric>(
 					egui::Slider::new(data, min..=max).show_value(false),
 				);
 
-				ui.add_sized(
-					[45.0, 0.0],
-					egui::DragValue::new(data).range(min..=max),
-				).union(resp)
+				ui.add_sized([45.0, 0.0], egui::DragValue::new(data).range(min..=max))
+					.union(resp)
 			})
 			.response
 		},

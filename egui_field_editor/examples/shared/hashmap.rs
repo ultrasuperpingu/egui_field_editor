@@ -183,7 +183,7 @@ impl eframe::App for MyApp {
 		egui::Panel::right("right_panel")
 			.resizable(true)
 			.default_size(400.0)
-			.show_inside(ui, |ui| {
+			.show(ui, |ui| {
 				if ui.add(
 					EguiInspector::new(self)
 						.with_title("HashMap Showcase")
@@ -194,7 +194,7 @@ impl eframe::App for MyApp {
 					println!("Data changed!!")
 				}
 			});
-		egui::CentralPanel::default().show_inside(ui, |ui| {
+		egui::CentralPanel::default().show(ui, |ui| {
 			egui::ScrollArea::vertical()
 				.id_salt("code_scrolling")
 				.show(ui, |ui| {

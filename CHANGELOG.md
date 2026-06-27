@@ -1,3 +1,5 @@
+## v0.6.0
+ - Port to egui 0.35
 ## v0.5.2
  - Remove useless and intrusive need to implement EguiInspect for generic types.
  - Fix splitter inspector id

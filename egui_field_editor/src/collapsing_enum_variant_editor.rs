@@ -1,6 +1,6 @@
 #![allow(unused)]
 use egui::{
-	Id, Response, Sense, Ui, WidgetText,
+	AsId, Id, Response, Sense, Ui, WidgetText,
 	collapsing_header::{CollapsingState, IconPainter, paint_default_icon},
 };
 use std::hash::Hash;
@@ -71,7 +71,7 @@ impl CollapsingEnumVariantEditor {
 	/// Explicitly set the source of the [`Id`] of this widget, instead of using title label.
 	/// This is useful if the title label is dynamic or not unique.
 	#[inline]
-	pub fn id_salt(mut self, id_salt: impl Hash) -> Self {
+	pub fn id_salt(mut self, id_salt: impl AsId) -> Self {
 		self.id_salt = Id::new(id_salt);
 		self
 	}
@@ -80,7 +80,7 @@ impl CollapsingEnumVariantEditor {
 	/// This is useful if the title label is dynamic or not unique.
 	#[deprecated = "Renamed id_salt"]
 	#[inline]
-	pub fn id_source(mut self, id_salt: impl Hash) -> Self {
+	pub fn id_source(mut self, id_salt: impl AsId) -> Self {
 		self.id_salt = Id::new(id_salt);
 		self
 	}
