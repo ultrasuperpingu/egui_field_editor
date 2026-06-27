@@ -17,6 +17,8 @@ struct MyApp {
 	raw_string: &'static str,
 	#[inspect(slider(min = "-43.0", max = 125.0))]
 	float64: f64,
+	#[inspect(slider(min = 43.0, max = 10e15))]
+	large_float64: f64,
 	#[inspect(name = "A proper field name")]
 	ugly_internal_field_name: u16,
 }

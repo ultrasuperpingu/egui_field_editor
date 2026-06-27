@@ -1,6 +1,7 @@
 ## v0.5.2
  - Remove useless and intrusive need to implement EguiInspect for generic types.
  - Fix splitter inspector id
+ - Last Egui 0.34 version
 ## v0.5.1
  - Fix panic caused by merging responses from different layers (layer_id mismatch)
  - Remove duplicated macro expansion in generated code

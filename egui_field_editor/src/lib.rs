@@ -251,8 +251,7 @@ impl<'a, T: EguiInspect + ?Sized> Widget for EguiInspector<'a, T> {
 			egui::vec2(splitter_width, ui.available_height()),
 		);
 
-		let splitter_resp =
-			ui.interact(splitter_rect, id.with("splitter"), egui::Sense::drag());
+		let splitter_resp = ui.interact(splitter_rect, id.with("splitter"), egui::Sense::drag());
 
 		let response: Option<Response> = ui.ctx().read_response(id);
 		let state = response.map(|r| r.widget_state()).unwrap_or_default();
@@ -588,7 +587,6 @@ pub fn add_number_slider<Num: egui::emath::Numeric>(
 	max: Num,
 	ui: &mut egui::Ui,
 ) -> egui::Response {
-	let editor = egui::Slider::new(data, min..=max);
 	crate::add_custom_ui(
 		label,
 		tooltip,
@@ -597,7 +595,19 @@ pub fn add_number_slider<Num: egui::emath::Numeric>(
 		ui,
 		|ui, field_width| {
 			ui.spacing_mut().slider_width = field_width - 50.;
-			ui.add_sized([field_width, 0.], editor)
+
+			ui.horizontal(|ui| {
+				let resp = ui.add_sized(
+					[field_width - 50.0, 0.0],
+					egui::Slider::new(data, min..=max).show_value(false),
+				);
+
+				ui.add_sized(
+					[45.0, 0.0],
+					egui::DragValue::new(data).range(min..=max),
+				).union(resp)
+			})
+			.response
 		},
 	)
 }
@@ -1621,7 +1631,7 @@ where
 /// Otherwise, only the `changed` state is propagated.
 macro_rules! combine_responses {
 	($r:expr, $res:ident) => {
-		if let Some(ref mut total) = $res { 
+		if let Some(ref mut total) = $res {
 			let content_resp = $r;
 			if total.layer_id == content_resp.layer_id {
 				*total = total.union(content_resp);
@@ -1630,8 +1640,7 @@ macro_rules! combine_responses {
 					total.mark_changed();
 				}
 			}
-		}
-		else {
+		} else {
 			$res = Some($r);
 		}
 	};

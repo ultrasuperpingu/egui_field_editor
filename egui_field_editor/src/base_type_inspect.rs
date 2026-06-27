@@ -1,6 +1,6 @@
 use crate::EguiInspect;
 use crate::collapsing_enum_variant_editor::CollapsingEnumVariantEditor;
-use egui::{Color32, Stroke, StrokeKind, Ui};
+use egui::{Color32, Stroke, StrokeKind};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -108,7 +108,7 @@ impl<T: EguiInspect> EguiInspect for Arc<Mutex<T>> {
 		tooltip: &str,
 		label_ratio: f32,
 		read_only: bool,
-		ui: &mut Ui,
+		ui: &mut egui::Ui,
 	) -> egui::Response {
 		match self.lock() {
 			Ok(mut inner) => {
@@ -129,7 +129,7 @@ impl<T: EguiInspect> EguiInspect for Arc<RwLock<T>> {
 		tooltip: &str,
 		label_ratio: f32,
 		read_only: bool,
-		ui: &mut Ui,
+		ui: &mut egui::Ui,
 	) -> egui::Response {
 		match self.write() {
 			Ok(mut inner) => {
@@ -256,7 +256,7 @@ fn inspect_collection<T: crate::EguiInspect>(
 	tooltip: &str,
 	label_ratio: f32,
 	read_only: bool,
-	ui: &mut Ui,
+	ui: &mut egui::Ui,
 ) -> egui::Response {
 	let id = if parent_id == egui::Id::NULL {
 		ui.next_auto_id()
@@ -335,7 +335,7 @@ impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
 		tooltip: &str,
 		label_ratio: f32,
 		read_only: bool,
-		ui: &mut Ui,
+		ui: &mut egui::Ui,
 	) -> egui::Response {
 		inspect_collection(self, _parent_id, label, tooltip, label_ratio, read_only, ui)
 	}
@@ -349,7 +349,7 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
 		tooltip: &str,
 		label_ratio: f32,
 		read_only: bool,
-		ui: &mut Ui,
+		ui: &mut egui::Ui,
 	) -> egui::Response {
 		let mut res =
 			inspect_collection(self, _parent_id, label, tooltip, label_ratio, read_only, ui);
@@ -389,7 +389,7 @@ impl<T: crate::EguiInspect> crate::EguiInspect for &mut [T] {
 		tooltip: &str,
 		label_ratio: f32,
 		read_only: bool,
-		ui: &mut Ui,
+		ui: &mut egui::Ui,
 	) -> egui::Response {
 		inspect_collection(self, parent_id, label, tooltip, label_ratio, read_only, ui)
 	}
@@ -402,7 +402,7 @@ impl<T: crate::EguiInspect + Default + Clone> crate::EguiInspect for HashMap<Str
 		tooltip: &str,
 		label_ratio: f32,
 		read_only: bool,
-		ui: &mut Ui,
+		ui: &mut egui::Ui,
 	) -> egui::Response {
 		crate::add_hashmap(
 			self,
@@ -441,7 +441,7 @@ impl crate::EguiInspect for Stroke {
 		read_only: bool,
 		ui: &mut egui::Ui,
 	) -> egui::Response {
-		let mut add_content = |ui: &mut Ui| {
+		let mut add_content = |ui: &mut egui::Ui| {
 			let resp = crate::add_color(
 				&mut self.color,
 				"Color",
@@ -615,7 +615,7 @@ where
 				ui,
 				self,
 				if new_value { "Some" } else { "None" },
-				|ui: &mut Ui, _| {
+				|ui: &mut egui::Ui, _| {
 					let mut changed = false;
 
 					if ui.selectable_label(!new_value, "None").clicked() {
