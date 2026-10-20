@@ -3,127 +3,9 @@
 #![warn(rustdoc::invalid_html_tags)]
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_doctest_main)]
+#![doc = include_str!("../../README.md")]
 
-//! This crate expose macros and traits to generate boilerplate code
-//! for structs inspection and edition.
-//!
-//! Basic usage would be:
-//! ```
-//! use egui_field_editor::{EguiInspect, EguiInspector};
-//! use eframe::egui;
-//!
-//! #[derive(EguiInspect, Default)]
-//! struct MyApp {
-//!     #[inspect(read_only)]
-//!     string: String,
-//!     #[inspect(multiline)]
-//!     code: String,
-//!     #[inspect(range(min = 12.0, max = 53.0))]
-//!     unsigned32: u32,
-//!     #[inspect(hidden)]
-//!     #[allow(dead_code)]
-//!     skipped: bool,
-//!     #[inspect(tooltip = "A boolean")]
-//!     boolean: bool,
-//!     raw_string: &'static str,
-//!     #[inspect(slider(min = "-43.0", max = 125.0))]
-//!     float64: f32,
-//!     #[inspect(name = "A proper field name")]
-//!     ugly_internal_field_name: u16,
-//! }
-//!
-//! impl eframe::App for MyApp {
-//!     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-//!         egui::CentralPanel::default().show_inside(ui, |ui| {
-//!             ui.add(EguiInspector::new(self));
-//!         });
-//!     }
-//! }
-//!
-//! fn main() {
-//!     let options = eframe::NativeOptions::default();
-//!     let _ = eframe::run_native("EGui Inspector Very Simple Example", options,
-//!         Box::new(|_cc|
-//!             Ok(Box::new(MyApp {
-//!                 raw_string:"A raw string which is not editable, even is read_only=false",
-//!                 string: "A read only string".to_string(),
-//!                 ..Default::default()
-//!             }))
-//!         )
-//!     );
-//! }
-//! ```
-//!
-//! You can add attributes to structures field.
-//!
-//! Currently supported attributes are defined in the struct AttributeArgs of egui_field_editor_derive
-//!
-//! Here is a list of supported attributes:
-//!
-//! - `name` *(String)*: Use custom label for the given field instead of the internal field name
-//! - `hidden` *(bool)*: If true, doesn't generate code for the given field
-//! - `read_only` *(bool)*: If true, the field is not editable (and color is grayed)
-//! - `slider` *(min=f32, max=f32)*: If present, use a slider when inspecting numbers
-//! - `range` *(min=f32, max=f32)*: Min/Max value for inspecting numbers
-//! - `multiline` *(optional u8)*: If set, display the text on multiple lines. If affected to a u8, it defines the number of rows to display
-//! - `tooltip` *(String)*: Tooltip to display when cursor is hover
-//! - `color` *(bool)*: Display the field has a color (field type needs to implement [`From<Color32Wrapper>`]/[`Into<Color32Wrapper>`] - see [`Color32Wrapper`])
-//! - `custom_fn` *(String)*: Use a custom function instead of calling [`EguiInspect::inspect_with_custom_id`]
-//! - `from_string`: *(bool)*: Force edition from string conversion (needs type to implement [`FromStr`] and [`Display`])
-//!
-//!    Compatible with `multiline`.`
-//! - `date` *(DatePickerParams)*: Parameters to customize the Date Picker widget:
-//!   - ```combo_boxes```: *(optional ```bool```)*
-//!     Show combo boxes in date picker popup. (Default: true).
-//!   - ```arrows```: *(optional ```bool```)*
-//!     Show arrows in date picker popup. (Default: true).
-//!   - ```calendar```: *(optional ```bool```)*
-//!     Show calendar in date picker popup. (Default: true).
-//!   - ```calendar_week```: *(optional ```bool```)*
-//!     Show calendar week in date picker popup. (Default: true).
-//!   - ```show_icon```: *(optional ```bool```)*
-//!     Show the calendar icon on the button. (Default: true).
-//!   - ```format```: *```String```*
-//!     Change the format shown on the button. (Default: ```"%Y-%m-%d"```).
-//!
-//!     See [`chrono::format::strftime`] for valid formats.
-//!
-//!   - ```highlight_weekends```: (optional ```bool```).
-//!     Highlight weekend days. (Default: true)
-//!   - ```start_end_years```: (min = ```String```|```i32```, max = ```String```|```i32```):
-//!
-//!     Set the start and end years for the date picker. (Default: today's year - 100 to today's year + 10)
-//!
-//!     This will limit the years you can choose from in the dropdown to the specified range.
-//!
-//!     For example, if you want to provide the range of years from 2000 to 2035, you can use: `start_end_years(min=2000, max=2035)`.
-//!
-//! # Feature Flags
-//! This crate provides optional features to extend functionality with external libraries. You can enable them ²ively to reduce compile time and dependency footprint.
-//! - `nalgebra_glm`: Enables support for inspecting nalgebra-glm types like Vec3, Vec4, etc.
-//!
-//!   This adds a dependency to [nalgebra-glm](https://docs.rs/nalgebra-glm/latest/nalgebra_glm/index.html).
-//! - `datepicker`: Enables date picker UI using jiff and egui_extras.
-//!
-//!   This adds a dependency to [egui_extras](https://docs.rs/egui_extras/latest/egui_extras/index.html) datepicker feature and to [jiff](https://docs.rs/jiff/latest/jiff/).
-//!   This implement inspector for the [jiff::civil::Date] type.
-//!   You can optionally use features [chrono](https://docs.rs/chrono/latest/chrono/) and [time](https://docs.rs/time/latest/time/) to implement it for This implement inspector for the [time::Date] and [chrono::NaiveDate].
-//! - `filepicker`: Enables file picker UI using rfd.
-//!
-//! - `smallvec`: Enables EguiInpect implementation for [smallvec::SmallVec].
-//!
-//! - `arrayvec`: Enables EguiInpect implementation for [arrayvec::ArrayVec].
-//!
-//! - `all`: A shortcut to activate all features.
-//!
-//!
-//! ##  Default Features
-//! No features are activated by default.
-//! ```toml
-//! default = []
-//! ```
-
-use egui::{AsId, Color32, Response, Ui, Widget, widget_style::Classes};
+use egui::{AsIdSalt, Color32, Response, Ui, Widget};
 #[cfg(feature = "nalgebra_glm")]
 use nalgebra_glm::*;
 use std::{
@@ -137,7 +19,7 @@ use std::{
 	ops::RangeInclusive,
 };
 
-/// See also [EguiInspect]
+/// See also [`EguiInspect`]
 pub use egui_field_editor_derive::*;
 
 /// A wrapper widget that renders an object implementing [`EguiInspect`] inside an `egui` UI.
@@ -211,8 +93,8 @@ impl<'a, T: EguiInspect + ?Sized> EguiInspector<'a, T> {
 	}
 	/// A source for the unique [`egui::Id`], e.g. `.id_salt("inspector")` or `.id_salt(loop_index)`.
 	#[inline]
-	pub fn id_salt(mut self, id_salt: impl AsId) -> Self {
-		self.id_salt = Some(egui::Id::new(id_salt));
+	pub fn id_salt(mut self, id_salt: impl AsIdSalt) -> Self {
+		self.id_salt = Some(egui::Id::unique(id_salt));
 		self
 	}
 	/// Set a title for the widget.
@@ -228,7 +110,6 @@ impl<'a, T: EguiInspect + ?Sized> EguiInspector<'a, T> {
 		self
 	}
 }
-
 impl<'a, T: EguiInspect + ?Sized> Widget for EguiInspector<'a, T> {
 	fn ui(self, ui: &mut Ui) -> Response {
 		ui.set_min_width(100.);
@@ -253,20 +134,22 @@ impl<'a, T: EguiInspect + ?Sized> Widget for EguiInspector<'a, T> {
 
 		let splitter_resp = ui.interact(splitter_rect, id.with("splitter"), egui::Sense::drag());
 
-		let response: Option<Response> = ui.ctx().read_response(id);
-		let state = response.map(|r| r.widget_state()).unwrap_or_default();
-		let stroke = ui
-			.style()
-			.separator_style(&Classes::default(), state)
-			.stroke;
+		let stroke = if splitter_resp.dragged() || splitter_resp.hovered() {
+			ui.visuals().widgets.active.bg_stroke
+		} else {
+			ui.visuals().widgets.noninteractive.bg_stroke
+		};
+
 		ui.painter().vline(
 			splitter_rect.center().x,
 			splitter_rect.top()..=splitter_rect.top() + 20.0,
 			stroke,
 		);
+
 		if splitter_resp.hovered() || splitter_resp.dragged() {
 			ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
 		}
+
 		if splitter_resp.dragged() {
 			let delta = ui.input(|i| i.pointer.delta().x);
 			label_ratio = (label_ratio + delta / available_width).clamp(0.1, 0.8);
@@ -274,7 +157,8 @@ impl<'a, T: EguiInspect + ?Sized> Widget for EguiInspector<'a, T> {
 				.data_mut(|data| data.insert_persisted(id, label_ratio));
 		}
 
-		egui::ScrollArea::vertical()
+		// 3. Rendu de la ScrollArea
+		let scroll_output = egui::ScrollArea::vertical()
 			.id_salt(id.with("scroll"))
 			.show(ui, |ui| {
 				ui.set_min_width(available_width);
@@ -285,8 +169,8 @@ impl<'a, T: EguiInspect + ?Sized> Widget for EguiInspector<'a, T> {
 				} else {
 					self.obj.inspect("", "", label_ratio, self.read_only, ui)
 				}
-			})
-			.inner
+			});
+		splitter_resp.union(scroll_output.inner)
 	}
 }
 

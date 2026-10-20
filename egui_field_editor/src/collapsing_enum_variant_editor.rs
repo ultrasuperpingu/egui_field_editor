@@ -1,6 +1,6 @@
 #![allow(unused)]
 use egui::{
-	AsId, Id, Response, Sense, Ui, WidgetText,
+	AsIdSalt, Id, Response, Sense, Ui, WidgetText,
 	collapsing_header::{CollapsingState, IconPainter, paint_default_icon},
 };
 use std::hash::Hash;
@@ -20,11 +20,11 @@ pub struct CollapsingEnumVariantEditor {
 }
 
 impl CollapsingEnumVariantEditor {
-	/// The [`CollapsingHeader`] starts out collapsed unless you call `default_open`.
+	/// The [`egui::CollapsingHeader`] starts out collapsed unless you call `default_open`.
 	///
 	/// The label is used as an [`Id`] source.
 	/// If the label is unique and static this is fine,
-	/// but if it changes or there are several [`CollapsingHeader`] with the same title
+	/// but if it changes or there are several [`egui::CollapsingHeader`] with the same title
 	/// you need to provide a unique id source with [`Self::id_salt`].
 	pub fn new(
 		text: impl Into<WidgetText>,
@@ -33,7 +33,7 @@ impl CollapsingEnumVariantEditor {
 	) -> Self {
 		let text = text.into();
 		let tooltip = tooltip.into();
-		let id_salt = Id::new(text.text());
+		let id_salt = Id::unique(text.text());
 		Self {
 			text,
 			tooltip,
@@ -49,7 +49,7 @@ impl CollapsingEnumVariantEditor {
 		}
 	}
 
-	/// By default, the [`CollapsingHeader`] is collapsed.
+	/// By default, the [`egui::CollapsingHeader`] is collapsed.
 	/// Call `.default_open(true)` to change this.
 	#[inline]
 	pub fn default_open(mut self, open: bool) -> Self {
@@ -71,8 +71,8 @@ impl CollapsingEnumVariantEditor {
 	/// Explicitly set the source of the [`Id`] of this widget, instead of using title label.
 	/// This is useful if the title label is dynamic or not unique.
 	#[inline]
-	pub fn id_salt(mut self, id_salt: impl AsId) -> Self {
-		self.id_salt = Id::new(id_salt);
+	pub fn id_salt(mut self, id_salt: impl AsIdSalt) -> Self {
+		self.id_salt = Id::unique(id_salt);
 		self
 	}
 
@@ -80,12 +80,12 @@ impl CollapsingEnumVariantEditor {
 	/// This is useful if the title label is dynamic or not unique.
 	#[deprecated = "Renamed id_salt"]
 	#[inline]
-	pub fn id_source(mut self, id_salt: impl AsId) -> Self {
-		self.id_salt = Id::new(id_salt);
+	pub fn id_source(mut self, id_salt: impl AsIdSalt) -> Self {
+		self.id_salt = Id::unique(id_salt);
 		self
 	}
 
-	/// If you set this to `false`, the [`CollapsingHeader`] will be grayed out and un-clickable.
+	/// If you set this to `false`, the [`egui::CollapsingHeader`] will be grayed out and un-clickable.
 	///
 	/// This is a convenience for [`Ui::disable`].
 	#[inline]
@@ -94,9 +94,9 @@ impl CollapsingEnumVariantEditor {
 		self
 	}
 
-	/// Should the [`CollapsingHeader`] show a background behind it? Default: `false`.
+	/// Should the [`egui::CollapsingHeader`] show a background behind it? Default: `false`.
 	///
-	/// To show it behind all [`CollapsingHeader`] you can just use:
+	/// To show it behind all [`egui::CollapsingHeader`] you can just use:
 	/// ```
 	/// # egui::__run_test_ui(|ui| {
 	/// ui.visuals_mut().collapsing_header_frame = true;
@@ -108,8 +108,8 @@ impl CollapsingEnumVariantEditor {
 		self
 	}
 
-	/// Use the provided function to render a different [`CollapsingHeader`] icon.
-	/// Defaults to a triangle that animates as the [`CollapsingHeader`] opens and closes.
+	/// Use the provided function to render a different [`egui::CollapsingHeader`] icon.
+	/// Defaults to a triangle that animates as the [`egui::CollapsingHeader`] opens and closes.
 	///
 	/// For example:
 	/// ```
@@ -151,7 +151,7 @@ impl CollapsingEnumVariantEditor {
 		indented: bool,
 	) -> CollapsingComboBoxResponse<R> {
 		// Make sure body is bellow header,
-		// and make sure it is one unit (necessary for putting a [`CollapsingHeader`] in a grid).
+		// and make sure it is one unit (necessary for putting a [`egui::CollapsingHeader`] in a grid).
 		ui.vertical(|ui| {
 			if !self.enabled {
 				ui.disable();
@@ -319,7 +319,7 @@ impl CollapsingEnumVariantEditor {
 	}
 }
 
-/// The response from showing a [`CollapsingHeader`].
+/// The response from showing a [`egui::CollapsingHeader`].
 pub struct CollapsingComboBoxResponse<R> {
 	/// Response of the actual clickable header.
 	pub header_response: Response,
@@ -337,12 +337,12 @@ pub struct CollapsingComboBoxResponse<R> {
 }
 
 impl<R> CollapsingComboBoxResponse<R> {
-	/// Was the [`CollapsingHeader`] fully closed (and not being animated)?
+	/// Was the [`egui::CollapsingHeader`] fully closed (and not being animated)?
 	pub fn fully_closed(&self) -> bool {
 		self.openness <= 0.0
 	}
 
-	/// Was the [`CollapsingHeader`] fully open (and not being animated)?
+	/// Was the [`egui::CollapsingHeader`] fully open (and not being animated)?
 	pub fn fully_open(&self) -> bool {
 		self.openness >= 1.0
 	}

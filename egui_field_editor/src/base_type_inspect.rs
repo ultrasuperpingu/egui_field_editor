@@ -246,7 +246,7 @@ struct EnumeratedItem<T> {
 
 impl<T: crate::EguiInspect> egui_dnd::DragDropItem for EnumeratedItem<&mut T> {
 	fn id(&self) -> egui::Id {
-		egui::Id::new(self.salt_id.with(self.index))
+		egui::Id::unique(self.salt_id.with(self.index))
 	}
 }
 /// Shared function to inspect a collection with DnD support

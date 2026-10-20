@@ -2,8 +2,8 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-	Data, DataEnum, DataStruct, DeriveInput, Fields, FieldsNamed, FieldsUnnamed,
-	Index, LitStr, Meta, parse_macro_input, spanned::Spanned,
+	Data, DataEnum, DataStruct, DeriveInput, Fields, FieldsNamed, FieldsUnnamed, Index, LitStr,
+	Meta, parse_macro_input, spanned::Spanned,
 };
 
 use darling::{FromDeriveInput, FromField, FromMeta, FromVariant};

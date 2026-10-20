@@ -16,6 +16,50 @@ This crate provide a `EguiInspect` trait which is necessary for a struct or enum
 types, and can be implemented for user created types with the macro `#[derive(EguiInspect)]`.
 If every underlying types implements `EguiInspect`, then you will be able to inspect it. If not, you can still be able to edit your type  by using ```hidden```, ```custom_fn``` or ```from_string``` attributes.
 
+Basic usage would be:
+```rust
+use egui_field_editor::{EguiInspect, EguiInspector};
+use eframe::egui;
+#[derive(EguiInspect, Default)]
+struct MyApp {
+    #[inspect(read_only)]
+    string: String,
+    #[inspect(multiline)]
+    code: String,
+    #[inspect(range(min = 12.0, max = 53.0))]
+    unsigned32: u32,
+    #[inspect(hidden)]
+    #[allow(dead_code)]
+    skipped: bool,
+    #[inspect(tooltip = "A boolean")]
+    boolean: bool,
+    raw_string: &'static str,
+    #[inspect(slider(min = "-43.0", max = 125.0))]
+    float64: f32,
+    #[inspect(name = "A proper field name")]
+    ugly_internal_field_name: u16,
+}
+impl eframe::App for MyApp {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show_inside(ui, |ui| {
+            ui.add(EguiInspector::new(self));
+        });
+    }
+}
+fn main() {
+    let options = eframe::NativeOptions::default();
+    let _ = eframe::run_native("Egui Field Editor Very Simple Example", options,
+        Box::new(|_cc|
+            Ok(Box::new(MyApp {
+                raw_string:"A raw string which is not editable, even is read_only=false",
+                string: "A read only string".to_string(),
+                ..Default::default()
+            }))
+        )
+    );
+}
+```
+
 You optionally can add the following features:
  - `nalgebra_glm`: provide implementation of `EguiInspect` for `nalgebra_glm` types
  - `datapicker`: provide implementation of `EguiInspect` for `NaiveDate`.
@@ -35,7 +79,7 @@ See the following examples:
  * [simple](https://github.com/ultrasuperpingu/egui_field_editor/blob/master/egui_field_editor/examples/shared/simple.rs): a simple example
  * [advanced](https://github.com/ultrasuperpingu/egui_field_editor/blob/master/egui_field_editor/examples/shared/advanced.rs): features more advanced features.
  * [manual_implement](https://github.com/ultrasuperpingu/egui_field_editor/blob/master/egui_field_editor/examples/shared/manual_implement.rs): see [Implement `EguiInspect` yourself](#implement-eguiinspect-yourself)
- * [shared_data](https://github.com/ultrasuperpingu/egui_field_editor/blob/master/egui_field_editor/examples/shared/shared_data.rs): features use of [Rc<RefCell<String>>], [Arc<Mutex<String>>] and [Arc<RwLock<String>>].
+ * [shared_data](https://github.com/ultrasuperpingu/egui_field_editor/blob/master/egui_field_editor/examples/shared/shared_data.rs): features use of [`std::rc::Rc<std::cell::RefCell<String>>`], [`std::sync::Arc<std::sync::Mutex<String>>`] and [`std::sync::Arc<std::sync::RwLock<String>>`].
  * [nalgebra_glm](https://github.com/ultrasuperpingu/egui_field_editor/blob/master/egui_field_editor/examples/shared/nalgebra_glm.rs): example with `nalgebra_glm` types.
  * [datepicker](https://github.com/ultrasuperpingu/egui_field_editor/blob/master/egui_field_editor/examples/shared/datepicker.rs): example with `NaiveDate`.
 
@@ -45,8 +89,8 @@ See the following examples:
 You can add a reference to this crate in your Cargo.toml:
 ```toml
 [dependencies]
-egui_field_editor = { version = "0.5", features=["all"] }
-egui_field_editor = "0.5"
+egui_field_editor = { version = "0.7", features=["all"] }
+egui_field_editor = "0.7"
 ```
 
 And then, instantiate a EguiInspector giving it a mutable reference to the object to inspect.
