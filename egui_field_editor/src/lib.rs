@@ -3,7 +3,7 @@
 #![warn(rustdoc::invalid_html_tags)]
 #![forbid(unsafe_code)]
 #![allow(clippy::needless_doctest_main)]
-#![doc = include_str!("../../README.md")]
+#![doc = include_str!("../README.md")]
 
 use egui::{AsIdSalt, Color32, Response, Ui, Widget};
 #[cfg(feature = "nalgebra_glm")]
